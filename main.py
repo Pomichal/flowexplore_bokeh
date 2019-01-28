@@ -175,6 +175,7 @@ def update(attr, old, new):
 #         source = ColumnDataSource(pat2.data)
 #         layout.children[1] = create_figure(pat2)
 
+file_source.on_change('data', file_callback)
 
 x = Select(title='X-Axis', value='x', options=df_patients.columns.tolist())
 y = Select(title='Y-Axis', value='y', options=df_patients.columns.tolist())
@@ -200,6 +201,3 @@ layout = row(controls, create_figure(df_patients))
 
 curdoc().add_root(layout)
 curdoc().title = "Crossfilter"
-
-
-file_source.on_change('data', file_callback)
