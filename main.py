@@ -56,6 +56,14 @@ def file_callback(attr, old, new):
         df_patients = hf.prepare_data(patient_data, coordinates)
         source = ColumnDataSource(df_patients)
         layout.children[1] = create_figure(df_patients)
+        x.options = df_patients.columns.tolist()
+        x.value = 'x'
+        y.options = df_patients.columns.tolist()
+        y.value = 'y'
+        color.options = ['None'] + df_patients.columns.tolist()
+        color.value = 'None'
+        size.options = ['None'] + df_patients.columns.tolist()
+        size.value = 'None'
         # print(df_patients.head())
         # print(edges.head())
 
@@ -69,10 +77,6 @@ def create_figure(patient_d):
         y_title = y.value.title()
 
         kw = dict()
-        # if x.value in patient.discrete:
-        #     kw['x_range'] = sorted(set(xs))
-        # if y.value in patient.discrete:
-        #     kw['y_range'] = sorted(set(ys))
         kw['title'] = "%s vs %s" % (x_title, y_title)
 
         # tools = [hover] # 'pan,box_zoom,reset, wheel_zoom, box_select, lasso_select,tap'
@@ -83,12 +87,9 @@ def create_figure(patient_d):
         p.xaxis.axis_label = x_title
         p.yaxis.axis_label = y_title
 
-        # if x.value in patient.discrete:
-        #     p.xaxis.major_label_orientation = pd.np.pi / 4
-
         if size.value != 'None':
             sizes = [hf.scale(value, df[size.value].min(),
-                           df[size.value].max()) if not np.isnan(value) else 5 for value in df[size.value]]
+                              df[size.value].max()) if not np.isnan(value) else 3 for value in df[size.value]]
         else:
             sizes = [9 for _ in df[x.value]]
         source.add(sizes, name='sz')
@@ -96,25 +97,21 @@ def create_figure(patient_d):
         if color.value != 'None':
 
             mapper = LinearColorMapper(palette=hf.create_color_map(),
-                                  high=df[color.value].max(),
-                                  high_color='red',
-                                  low=df[color.value].min(),
-                                  low_color='blue'
+                                       high=df[color.value].max(),
+                                       high_color='red',
+                                       low=df[color.value].min(),
+                                       low_color='blue'
                                   )
             color_bar = ColorBar(color_mapper=mapper, location=(0, 0))
 
-
-            # p.circle(x=xs, y=ys, color={'field': color.value,
-            # 'transform': mapper}, size=sz, line_color="white", alpha=0.6,
-            #          hover_color='white', hover_alpha=0.5)
             renderer = p.circle(x=x.value, y=y.value, color={'field': color.value, 'transform': mapper},
-                     size='sz', line_color="white",
-                     alpha=0.6, hover_color='white', hover_alpha=0.5, source=source)
+                                size='sz', line_color="white",
+                                alpha=0.6, hover_color='white', hover_alpha=0.5, source=source)
 
             p.add_layout(color_bar, 'right')
         else:
             renderer = p.circle(x=x.value, y=y.value, size='sz', line_color="white", alpha=0.6,
-                     hover_color='white', hover_alpha=0.5, source=source)
+                                hover_color='white', hover_alpha=0.5, source=source)
 
         # for line in range(0, edges.shape[0]):
         #     p.line([edges.loc[line, 'from_x'], edges.loc[line, 'to_x']],
@@ -124,10 +121,9 @@ def create_figure(patient_d):
         hover = HoverTool(
             tooltips=[
                 ("index", "$index"),
-                ("cell count", "@{csv.pbm_036.count}"),
+                ("{}".format(size.value), "@{{{}}}".format(size.value)),
+                ("{}".format(color.value), "@{{{}}}".format(color.value)),
                 ("(x,y)", "($x, $y)"),
-                # ('close', '$@{adj close}{%0.2f}'),  # use @{ } for field names with spaces
-                # ('volume', '@volume{0.00 a}'),
             ],
             renderers=[renderer]
             # formatters={
@@ -166,15 +162,6 @@ def update(attr, old, new):
     layout.children[1] = create_figure(df_patients)
 
 
-# def update2(attr, old, new):
-#     global source
-#     if dataset.value == 'pat1':
-#         source = ColumnDataSource(pat1.data)
-#         layout.children[1] = create_figure(pat1)
-#     else:
-#         source = ColumnDataSource(pat2.data)
-#         layout.children[1] = create_figure(pat2)
-
 file_source.on_change('data', file_callback)
 
 x = Select(title='X-Axis', value='x', options=df_patients.columns.tolist())
@@ -194,10 +181,9 @@ dropdown = Dropdown(label="Upload data", button_type="warning", menu=menu)
 dropdown.callback = CustomJS(args=dict(file_source=file_source), code=up.file_read_callback)
 
 
-# controls = widgetbox([x, y, color, size, dataset], width=200)
 controls = widgetbox([dropdown, x, y, color, size], width=200)
 layout = row(controls, create_figure(df_patients))
 
 
 curdoc().add_root(layout)
-curdoc().title = "Crossfilter"
+curdoc().title = "Flowexplore"
