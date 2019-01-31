@@ -162,6 +162,10 @@ def update(attr, old, new):
     layout.children[1] = create_figure(df_patients)
 
 
+def create_bubble():
+    print(source.selected.indices)
+
+
 file_source.on_change('data', file_callback)
 
 x = Select(title='X-Axis', value='x', options=df_patients.columns.tolist())
@@ -174,6 +178,8 @@ x.on_change('value', update)
 size.on_change('value', update)
 color.on_change('value', update)
 
+bubble = Button(label="Create bubble")
+bubble.on_click(create_bubble)
 
 menu = [("Upload patient data", "patient_data"), ("Upload cluster coordinates", "coordinates"),
         ("Upload graph edges", "edges")]
@@ -181,7 +187,7 @@ dropdown = Dropdown(label="Upload data", button_type="warning", menu=menu)
 dropdown.callback = CustomJS(args=dict(file_source=file_source), code=up.file_read_callback)
 
 
-controls = widgetbox([dropdown, x, y, color, size], width=200)
+controls = widgetbox([dropdown, x, y, color, size, bubble], width=200)
 layout = row(controls, create_figure(df_patients))
 
 
