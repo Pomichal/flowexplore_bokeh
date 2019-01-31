@@ -21,6 +21,7 @@ coordinates = pd.DataFrame()
 edges = pd.DataFrame()
 
 df_patients = pd.DataFrame()
+populations = pd.DataFrame(data={'population_name': ['None'], "color": ['white']})
 source = ColumnDataSource()
 
 
@@ -87,6 +88,10 @@ def create_figure(patient_d):
         p.xaxis.axis_label = x_title
         p.yaxis.axis_label = y_title
 
+        # print([populations.iloc[pop_id]['color'] for pop_id in df['populationID']])
+        line_color = [populations.iloc[pop_id]['color'] for pop_id in df['populationID']]
+        source.add(line_color, name='lc')
+
         if size.value != 'None':
             sizes = [hf.scale(value, df[size.value].min(),
                               df[size.value].max()) if not np.isnan(value) else 3 for value in df[size.value]]
@@ -105,13 +110,21 @@ def create_figure(patient_d):
             color_bar = ColorBar(color_mapper=mapper, location=(0, 0))
 
             renderer = p.circle(x=x.value, y=y.value, color={'field': color.value, 'transform': mapper},
-                                size='sz', line_color="white",
+                                size='sz',
+                                line_color="lc",
+                                line_width=5,
+                                line_alpha=0.4,
                                 alpha=0.6, hover_color='white', hover_alpha=0.5, source=source)
 
             p.add_layout(color_bar, 'right')
         else:
-            renderer = p.circle(x=x.value, y=y.value, size='sz', line_color="white", alpha=0.6,
-                                hover_color='white', hover_alpha=0.5, source=source)
+            renderer = p.circle(x=x.value, y=y.value, size='sz',
+                                line_color="lc",
+                                line_width=5,
+                                line_alpha=0.4,
+                                alpha=0.6,
+                                hover_color='white', hover_alpha=0.5,
+                                source=source)
 
         # for line in range(0, edges.shape[0]):
         #     p.line([edges.loc[line, 'from_x'], edges.loc[line, 'to_x']],
@@ -163,7 +176,8 @@ def update(attr, old, new):
 
 
 def create_bubble():
-    print(source.selected.indices)
+    print(populations)
+    # print(source.selected.indices)
 
 
 file_source.on_change('data', file_callback)
