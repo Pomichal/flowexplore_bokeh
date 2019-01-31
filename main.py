@@ -21,7 +21,7 @@ coordinates = pd.DataFrame()
 edges = pd.DataFrame()
 
 df_patients = pd.DataFrame()
-populations = pd.DataFrame(data={'population_name': ['None'], "color": ['white']})
+populations = pd.DataFrame()
 source = ColumnDataSource()
 
 
@@ -52,7 +52,7 @@ def file_callback(attr, old, new):
         dropdown.menu[2] = ("edges ok", 'edges')
     else:
         print("something went wrong, unknown dropdown value")
-    if reduce(lambda a, b: a and b, [True if 'ok' in str[0] else False for str in dropdown.menu]):
+    if reduce(lambda a, b: a and b, [True if 'ok' in string[0] else False for string in dropdown.menu]):
         dropdown.button_type = "success"
         df_patients = hf.prepare_data(patient_data, coordinates)
         source = ColumnDataSource(df_patients)
@@ -89,8 +89,12 @@ def create_figure(patient_d):
         p.yaxis.axis_label = y_title
 
         # print([populations.iloc[pop_id]['color'] for pop_id in df['populationID']])
-        line_color = [populations.iloc[pop_id]['color'] for pop_id in df['populationID']]
+        line_color = [populations.iloc[pop_id]['color'] if not pd.isna(pop_id) else 'white'
+                      for pop_id in df['populationID']]
         source.add(line_color, name='lc')
+
+        line_width = [5 if lc != 'white' else 1 for lc in line_color]
+        source.add(line_width, name='lw')
 
         if size.value != 'None':
             sizes = [hf.scale(value, df[size.value].min(),
@@ -112,7 +116,7 @@ def create_figure(patient_d):
             renderer = p.circle(x=x.value, y=y.value, color={'field': color.value, 'transform': mapper},
                                 size='sz',
                                 line_color="lc",
-                                line_width=5,
+                                line_width="lw",
                                 line_alpha=0.4,
                                 alpha=0.6, hover_color='white', hover_alpha=0.5, source=source)
 
@@ -120,7 +124,7 @@ def create_figure(patient_d):
         else:
             renderer = p.circle(x=x.value, y=y.value, size='sz',
                                 line_color="lc",
-                                line_width=5,
+                                line_width="lw",
                                 line_alpha=0.4,
                                 alpha=0.6,
                                 hover_color='white', hover_alpha=0.5,
