@@ -167,17 +167,17 @@ def create_figure(patient_d):
         p.toolbar.active_tap = draw_tool
 
         # plot styling
-        p.title.text_color = "white"
-        p.background_fill_color = "#1f1f1f"
-        p.border_fill_color = "#2f2f2f"
-        p.xaxis.major_label_text_color = "white"
-        p.xaxis.axis_line_color = "white"
-        p.xaxis.major_tick_line_color = "white"
-        p.xaxis.minor_tick_line_color = "white"
-        p.yaxis.major_label_text_color = "white"
-        p.yaxis.axis_line_color = "white"
-        p.yaxis.major_tick_line_color = "white"
-        p.yaxis.minor_tick_line_color = "white"
+        # p.title.text_color = "white"
+        # p.background_fill_color = "#1f1f1f"
+        # p.border_fill_color = "#2f2f2f"
+        # p.xaxis.major_label_text_color = "white"
+        # p.xaxis.axis_line_color = "white"
+        # p.xaxis.major_tick_line_color = "white"
+        # p.xaxis.minor_tick_line_color = "white"
+        # p.yaxis.major_label_text_color = "white"
+        # p.yaxis.axis_line_color = "white"
+        # p.yaxis.major_tick_line_color = "white"
+        # p.yaxis.minor_tick_line_color = "white"
 
         return p
 
