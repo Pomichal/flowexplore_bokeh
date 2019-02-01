@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from os.path import join, dirname
 from bokeh.layouts import row, widgetbox, column
-from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, CustomJS
+from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, CustomJS, LassoSelectTool
 from bokeh.models.widgets import Button, Dropdown, TextInput
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.plotting import curdoc, figure
@@ -92,8 +92,9 @@ def create_figure(patient_d):
 
         # tools = [hover] # 'pan,box_zoom,reset, wheel_zoom, box_select, lasso_select,tap'
         p = figure(plot_height=800, plot_width=1200,
-                   tools='pan, box_zoom,reset, wheel_zoom, box_select, lasso_select,tap, save',
+                   tools='pan, box_zoom,reset, wheel_zoom, box_select, tap, save',
                    toolbar_location="above", **kw)
+        p.add_tools(LassoSelectTool(select_every_mousemove=False))
 
         p.xaxis.axis_label = x_title
         p.yaxis.axis_label = y_title
@@ -130,7 +131,6 @@ def create_figure(patient_d):
                                 line_width="lw",
                                 line_alpha=0.4,
                                 alpha=0.6, hover_color='white', hover_alpha=0.5, source=source)
-
             p.add_layout(color_bar, 'right')
         else:
             renderer = p.circle(x=x.value, y=y.value, size='sz',
@@ -193,7 +193,7 @@ def update(attr, old, new):
 
 def create_bubble():
     global populations
-    print(populations)
+    # print(populations)
     populations = populations.append({'population_name': bubble_name.value,
                                       'color': population_colors.loc[len(populations), 'color_name']},
                                      ignore_index=True)
