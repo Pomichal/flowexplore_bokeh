@@ -1,28 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-      <!--<link href="flowexplore-bokeh_only/static/css/style.css" rel="stylesheet">-->
-      <style>
-          @import url(https://fonts.googleapis.com/css?family=Noto+Sans);
-body {
-    font-family: 'Noto Sans', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-    color: #fff;
-    background: #2F2F2F;
-}
+{% extends base %}
 
-.customTextInput .bk-widget-form-input {
-      width: 154px;
-      min-width: 70% !important;
-}
-      </style>
-      <meta charset="utf-8">
-      {{ bokeh_css }}
-      {{ bokeh_js }}
-  </head>
-  <body>
-  {{ plot_div|indent(8) }}
-  {{ plot_script|indent(8) }}
-  </body>
-</html>
+{% block title %}Bokeh Gapminder Example{% endblock %}
+
+{% block postamble %}
+  <style>
+    {% include 'style.css' %}
+  </style>
+{% endblock %}
+
+{% block contents %}
+
+    {{ super() }}
+
+{% endblock %}
