@@ -78,8 +78,8 @@ def create_figure(patient_d):
 
         pop_names = [populations.iloc[pop_id]['population_name'] if pop_id != -1 else '???'
                      for pop_id in df['populationID']]
-        print(pop_names)
-        print(df[df['populationID'] != -1])
+        # print(pop_names)
+        # print(df[df['populationID'] != -1])
         source.add(pop_names, name='pop_names')
 
         xs = df[x.value].values

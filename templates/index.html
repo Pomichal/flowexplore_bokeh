@@ -1,22 +1,14 @@
-{% extends base %}
-
-{% block title %}Flowexplore{% endblock %}
-
-{% block preamble %}
-
-<link href="flowexplore-bokeh_only/static/css/style.css" rel="stylesheet">
-<!--<style>-->
-  <!--@import url(https://fonts.googleapis.com/css?family=Noto+Sans);-->
-  <!--body {-->
-    <!--font-family: 'Noto Sans', sans-serif;-->
-    <!-- -webkit-font-smoothing: antialiased;-->
-    <!--text-rendering: optimizeLegibility;-->
-    <!--color: #fff;-->
-    <!--background: #2F2F2F;-->
-  <!--}-->
-  <!--.customTextInput .bk-widget-form-input {-->
-      <!--width: 154px;-->
-      <!--min-width: 70% !important;-->
-<!--}-->
-<!--/*</style>*/-->
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+      <link href="flowexplore-bokeh_only/static/css/style.css" rel="stylesheet">
+    <meta charset="utf-8">
+    {{ bokeh_css }}
+    {{ bokeh_js }}
+    <!--<link rel="stylesheet" href="stocktext/static/css/styles.css"/>-->
+  </head>
+  <body>
+  {{ plot_div|indent(8) }}
+  {{ plot_script|indent(8) }}
+  </body>
+</html>
