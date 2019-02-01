@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
-from bokeh.layouts import row, widgetbox
+from os.path import join, dirname
+from bokeh.layouts import row, widgetbox, column
 from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, CustomJS
-from bokeh.models.widgets import Button, Dropdown
+from bokeh.models.widgets import Button, Dropdown, TextInput
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.plotting import curdoc, figure
 from functools import reduce
@@ -23,6 +24,8 @@ edges = pd.DataFrame()
 df_patients = pd.DataFrame()
 populations = pd.DataFrame()
 source = ColumnDataSource()
+
+population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))
 
 
 def file_callback(attr, old, new):
@@ -72,6 +75,13 @@ def file_callback(attr, old, new):
 def create_figure(patient_d):
     df = patient_d
     if not df.empty:
+
+        pop_names = [populations.iloc[pop_id]['population_name'] if pop_id != -1 else '???'
+                     for pop_id in df['populationID']]
+        print(pop_names)
+        print(df[df['populationID'] != -1])
+        source.add(pop_names, name='pop_names')
+
         xs = df[x.value].values
         ys = df[y.value].values
         x_title = x.value.title()
@@ -82,14 +92,15 @@ def create_figure(patient_d):
 
         # tools = [hover] # 'pan,box_zoom,reset, wheel_zoom, box_select, lasso_select,tap'
         p = figure(plot_height=800, plot_width=1200,
-                   tools='pan, box_zoom,reset, wheel_zoom, box_select, lasso_select,tap',
+                   tools='pan, box_zoom,reset, wheel_zoom, box_select, lasso_select,tap, save',
                    toolbar_location="above", **kw)
 
         p.xaxis.axis_label = x_title
         p.yaxis.axis_label = y_title
 
+        # mark populations
         # print([populations.iloc[pop_id]['color'] for pop_id in df['populationID']])
-        line_color = [populations.iloc[pop_id]['color'] if not pd.isna(pop_id) else 'white'
+        line_color = [populations.iloc[pop_id]['color'] if pop_id != -1 else 'white'
                       for pop_id in df['populationID']]
         source.add(line_color, name='lc')
 
@@ -140,6 +151,7 @@ def create_figure(patient_d):
                 ("index", "$index"),
                 ("{}".format(size.value), "@{{{}}}".format(size.value)),
                 ("{}".format(color.value), "@{{{}}}".format(color.value)),
+                ("population", "@pop_names"),
                 ("(x,y)", "($x, $y)"),
             ],
             renderers=[renderer]
@@ -180,8 +192,15 @@ def update(attr, old, new):
 
 
 def create_bubble():
+    global populations
     print(populations)
-    # print(source.selected.indices)
+    populations = populations.append({'population_name': bubble_name.value,
+                                      'color': population_colors.loc[len(populations), 'color_name']},
+                                     ignore_index=True)
+    selected = source.selected.indices
+    df_patients.iloc[selected, -1] = len(populations) - 1
+    bubble_name.value = ""
+    layout.children[1] = create_figure(df_patients)
 
 
 file_source.on_change('data', file_callback)
@@ -196,8 +215,10 @@ x.on_change('value', update)
 size.on_change('value', update)
 color.on_change('value', update)
 
+bubble_name = TextInput(placeholder="bubble's name", css_classes=['customTextInput'])
 bubble = Button(label="Create bubble")
 bubble.on_click(create_bubble)
+
 
 menu = [("Upload patient data", "patient_data"), ("Upload cluster coordinates", "coordinates"),
         ("Upload graph edges", "edges")]
@@ -205,8 +226,11 @@ dropdown = Dropdown(label="Upload data", button_type="warning", menu=menu)
 dropdown.callback = CustomJS(args=dict(file_source=file_source), code=up.file_read_callback)
 
 
-controls = widgetbox([dropdown, x, y, color, size, bubble], width=200)
-layout = row(controls, create_figure(df_patients))
+controls = widgetbox([dropdown, x, y, color, size], width=200)
+
+bubble_create = widgetbox([bubble_name, bubble], width=200)
+
+layout = row(column(controls, bubble_create), create_figure(df_patients))
 
 
 curdoc().add_root(layout)

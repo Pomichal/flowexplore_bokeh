@@ -1,6 +1,7 @@
 import matplotlib as mpl
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
+import pandas as pd
 
 def prepare_data(df_patient, df_coordinates):
     """
@@ -11,9 +12,9 @@ def prepare_data(df_patient, df_coordinates):
     """
     df_patient['x'] = df_coordinates['layout.V1']
     df_patient['y'] = df_coordinates['layout.V2']
-    df_patient['populationID'] = np.NaN
+    df_patient['populationID'] = -1
     data = df_patient.drop('Unnamed: 0', axis=1)
-    print(df_patient.head())
+    # print(df_patient.head())
 
     # rename attributes example
     # data.rename(index=str, columns={"csv.pbm_038.count": "count"}, inplace=True)
