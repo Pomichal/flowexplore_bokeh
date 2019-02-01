@@ -3,6 +3,7 @@ from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 import pandas as pd
 
+
 def prepare_data(df_patient, df_coordinates):
     """
     creates a dataframe with patient data and [x,y] coordinates for each cluster.
@@ -52,7 +53,7 @@ def create_color_map():
     return colors
 
 
-def scale(old_value, old_min, old_max, new_min=10, new_max=40):
+def scale(old_value, old_min, old_max, new_min=15, new_max=50):
     """
     Scale data into range new_min, new_max
     :param old_value:

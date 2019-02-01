@@ -112,7 +112,7 @@ def create_figure(patient_d):
             sizes = [hf.scale(value, df[size.value].min(),
                               df[size.value].max()) if not np.isnan(value) else 3 for value in df[size.value]]
         else:
-            sizes = [9 for _ in df[x.value]]
+            sizes = [15 for _ in df[x.value]]
         source.add(sizes, name='sz')
 
         if color.value != 'None':
@@ -129,14 +129,14 @@ def create_figure(patient_d):
                                 size='sz',
                                 line_color="lc",
                                 line_width="lw",
-                                line_alpha=0.4,
+                                line_alpha=0.9,
                                 alpha=0.6, hover_color='white', hover_alpha=0.5, source=source)
             p.add_layout(color_bar, 'right')
         else:
             renderer = p.circle(x=x.value, y=y.value, size='sz',
                                 line_color="lc",
                                 line_width="lw",
-                                line_alpha=0.4,
+                                line_alpha=0.9,
                                 alpha=0.6,
                                 hover_color='white', hover_alpha=0.5,
                                 source=source)
