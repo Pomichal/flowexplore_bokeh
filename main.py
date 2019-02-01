@@ -162,7 +162,7 @@ def create_figure(patient_d):
             # },
         )
         p.add_tools(hover)
-        draw_tool = PointDrawTool(renderers=[renderer], empty_value='black')
+        draw_tool = PointDrawTool(renderers=[renderer], empty_value='black', add=False)
         p.add_tools(draw_tool)
         p.toolbar.active_tap = draw_tool
 
@@ -200,6 +200,8 @@ def create_bubble():
     selected = source.selected.indices
     df_patients.iloc[selected, -1] = len(populations) - 1
     bubble_name.value = ""
+    print("leeeen", len(source.to_df()))
+    print(source.to_df().tail())
     layout.children[1] = create_figure(df_patients)
 
 
