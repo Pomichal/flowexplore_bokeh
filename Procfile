@@ -1,1 +1,1 @@
-web: bokeh serve --port=$PORT --allow-websocket-origin=flowexploredemo.herokuapp.com --address=0.0.0.0 --use-xheaders flowexplore-bokeh_only
+web: bokeh serve --port=$PORT --address=0.0.0.0 --allow-websocket-origin=flowexploredemo.herokuapp.com --use-xheaders main.py
