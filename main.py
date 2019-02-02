@@ -198,14 +198,41 @@ def create_bubble():
                                       'color': population_colors.loc[len(populations), 'color_name']},
                                      ignore_index=True)
     selected = source.selected.indices
-    df_patients.iloc[selected, -1] = len(populations) - 1
+    df_patients.loc[selected, 'populationID'] = len(populations) - 1
     bubble_name.value = ""
     print("leeeen", len(source.to_df()))
     print(source.to_df().tail())
     layout.children[1] = create_figure(df_patients)
 
 
+def load_test_data():
+    global patient_data
+    global coordinates
+    global edges
+    global df_patients
+    global source
+    patient_data = pd.read_csv(join(dirname(__file__), 'data/pat_data.csv'))
+    coordinates = pd.read_csv(join(dirname(__file__), 'data/coordinates.csv'))
+    edges = pd.read_csv(join(dirname(__file__), 'data/edges.csv'))
+
+    dropdown.button_type = "success"
+    df_patients = hf.prepare_data(patient_data, coordinates)
+    source = ColumnDataSource(df_patients)
+    layout.children[1] = create_figure(df_patients)
+    x.options = df_patients.columns.tolist()
+    x.value = 'x'
+    y.options = df_patients.columns.tolist()
+    y.value = 'y'
+    color.options = ['None'] + df_patients.columns.tolist()
+    color.value = 'None'
+    size.options = ['None'] + df_patients.columns.tolist()
+    size.value = 'None'
+
+
 file_source.on_change('data', file_callback)
+
+test_data = Button(label="test data")
+test_data.on_click(load_test_data)
 
 x = Select(title='X-Axis', value='x', options=df_patients.columns.tolist())
 y = Select(title='Y-Axis', value='y', options=df_patients.columns.tolist())
@@ -228,7 +255,7 @@ dropdown = Dropdown(label="Upload data", button_type="warning", menu=menu)
 dropdown.callback = CustomJS(args=dict(file_source=file_source), code=up.file_read_callback)
 
 
-controls = widgetbox([dropdown, x, y, color, size], width=200)
+controls = widgetbox([test_data, dropdown, x, y, color, size], width=200)
 
 bubble_create = widgetbox([bubble_name, bubble], width=200)
 
