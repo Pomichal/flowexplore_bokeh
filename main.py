@@ -1,16 +1,18 @@
 import pandas as pd
 import numpy as np
+import math
 from os.path import join, dirname
 from bokeh.layouts import row, widgetbox, column
-from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, CustomJS, LassoSelectTool
+from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, \
+    CustomJS, LassoSelectTool, GraphRenderer, StaticLayoutProvider, Circle, MultiLine
 from bokeh.models.widgets import Button, Dropdown, TextInput
 from bokeh.models.mappers import LinearColorMapper
+from bokeh.models.graphs import NodesAndLinkedEdges
 from bokeh.plotting import curdoc, figure
 from functools import reduce
 
 from io import StringIO
 import base64
-
 
 import upload as up
 import help_functions as hf
@@ -72,25 +74,18 @@ def file_callback(attr, old, new):
         # print(edges.head())
 
 
-def create_figure(patient_d):
-    df = patient_d
+def create_figure(df):
     if not df.empty:
-
         pop_names = [populations.iloc[pop_id]['population_name'] if pop_id != -1 else '???'
                      for pop_id in df['populationID']]
-        # print(pop_names)
-        # print(df[df['populationID'] != -1])
         source.add(pop_names, name='pop_names')
 
-        xs = df[x.value].values
-        ys = df[y.value].values
         x_title = x.value.title()
         y_title = y.value.title()
 
         kw = dict()
         kw['title'] = "%s vs %s" % (x_title, y_title)
 
-        # tools = [hover] # 'pan,box_zoom,reset, wheel_zoom, box_select, lasso_select,tap'
         p = figure(plot_height=800, plot_width=1200,
                    tools='pan, box_zoom,reset, wheel_zoom, box_select, tap, save',
                    toolbar_location="above", **kw)
@@ -100,7 +95,6 @@ def create_figure(patient_d):
         p.yaxis.axis_label = y_title
 
         # mark populations
-        # print([populations.iloc[pop_id]['color'] for pop_id in df['populationID']])
         line_color = [populations.iloc[pop_id]['color'] if pop_id != -1 else 'white'
                       for pop_id in df['populationID']]
         source.add(line_color, name='lc')
@@ -116,13 +110,12 @@ def create_figure(patient_d):
         source.add(sizes, name='sz')
 
         if color.value != 'None':
-
             mapper = LinearColorMapper(palette=hf.create_color_map(),
                                        high=df[color.value].max(),
                                        high_color='red',
                                        low=df[color.value].min(),
                                        low_color='blue'
-                                  )
+                                       )
             color_bar = ColorBar(color_mapper=mapper, location=(0, 0))
 
             renderer = p.circle(x=x.value, y=y.value, color={'field': color.value, 'transform': mapper},
@@ -132,6 +125,7 @@ def create_figure(patient_d):
                                 line_alpha=0.9,
                                 alpha=0.6, hover_color='white', hover_alpha=0.5, source=source)
             p.add_layout(color_bar, 'right')
+
         else:
             renderer = p.circle(x=x.value, y=y.value, size='sz',
                                 line_color="lc",
@@ -143,7 +137,7 @@ def create_figure(patient_d):
 
         # for line in range(0, edges.shape[0]):
         #     p.line([edges.loc[line, 'from_x'], edges.loc[line, 'to_x']],
-        #     [edges.loc[line, 'from_y'], edges.loc[line, 'to_y']],
+        #            [edges.loc[line, 'from_y'], edges.loc[line, 'to_y']],
         #            line_width=0.5, color='white')
 
         hover = HoverTool(
@@ -187,6 +181,39 @@ def create_figure(patient_d):
     return p
 
 
+def create_figure2(df):
+    N = len(df)
+    node_indices = list(range(1, N+1))
+
+    plot = figure(title='Graph Layout Demonstration', x_range=(-1.1, 600), y_range=(-1.1, 600),
+                  tools='pan, wheel_zoom, box_select', toolbar_location='above')
+
+    graph = GraphRenderer()
+
+    graph.node_renderer.data_source.add(node_indices, 'index')
+    # graph.node_renderer.data_source.add(Spectral8, 'color')
+    graph.node_renderer.glyph = Circle(radius=15)
+
+    graph.selection_policy = NodesAndLinkedEdges()
+
+    graph.edge_renderer.glyph = MultiLine(line_color="#CCCCCC", line_alpha=0.8, line_width=1)
+    graph.edge_renderer.data_source.data = dict(
+        start=edges['edges.from'].tolist(),
+        end=edges['edges.to'].tolist())
+
+    # start of layout code
+    x = df['x']
+    y = df['y']
+    graph_layout = dict(zip(node_indices, zip(x, y)))
+    graph.layout_provider = StaticLayoutProvider(graph_layout=graph_layout)
+
+    plot.renderers.append(graph)
+
+    draw_tool = PointDrawTool(add=False)
+    plot.add_tools(draw_tool)
+    return plot
+
+
 def update(attr, old, new):
     layout.children[1] = create_figure(df_patients)
 
@@ -218,7 +245,7 @@ def load_test_data():
     dropdown.button_type = "success"
     df_patients = hf.prepare_data(patient_data, coordinates)
     source = ColumnDataSource(df_patients)
-    layout.children[1] = create_figure(df_patients)
+    layout.children[1] = create_figure2(df_patients)
     x.options = df_patients.columns.tolist()
     x.value = 'x'
     y.options = df_patients.columns.tolist()
@@ -248,12 +275,10 @@ bubble_name = TextInput(placeholder="bubble's name", css_classes=['customTextInp
 bubble = Button(label="Create bubble")
 bubble.on_click(create_bubble)
 
-
 menu = [("Upload patient data", "patient_data"), ("Upload cluster coordinates", "coordinates"),
         ("Upload graph edges", "edges")]
 dropdown = Dropdown(label="Upload data", button_type="warning", menu=menu)
 dropdown.callback = CustomJS(args=dict(file_source=file_source), code=up.file_read_callback)
-
 
 controls = widgetbox([test_data, dropdown, x, y, color, size], width=200)
 
@@ -261,7 +286,5 @@ bubble_create = widgetbox([bubble_name, bubble], width=200)
 
 layout = row(column(controls, bubble_create), create_figure(df_patients))
 
-
 curdoc().add_root(layout)
 curdoc().title = "Flowexplore"
-
