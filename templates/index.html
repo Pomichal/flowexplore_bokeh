@@ -1,15 +1,15 @@
-{% extends base %}
-
-{% block title %}Bokeh Gapminder Example{% endblock %}
-
-{% block postamble %}
-  <style>
-    {% include 'style.css' %}
-  </style>
-{% endblock %}
-
-{% block contents %}
-
-    {{ super() }}
-
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <style>
+            {% include 'style.css' %}
+        </style>
+        <meta charset="utf-8">
+        {{ bokeh_css }}
+        {{ bokeh_js }}
+    </head>
+    <body>
+        {{ plot_div|indent(8) }}
+        {{ plot_script|indent(8) }}
+    </body>
+</html>
