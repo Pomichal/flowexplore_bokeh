@@ -237,3 +237,4 @@ layout = row(column(controls, bubble_create), create_figure(df_patients))
 
 curdoc().add_root(layout)
 curdoc().title = "Flowexplore"
+
