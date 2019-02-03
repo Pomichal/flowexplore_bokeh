@@ -5,7 +5,7 @@ from os.path import join, dirname
 from bokeh.layouts import row, widgetbox, column
 from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, \
     CustomJS, LassoSelectTool, GraphRenderer, StaticLayoutProvider, Circle, MultiLine
-from bokeh.models.widgets import Button, Dropdown, TextInput
+from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.graphs import NodesAndLinkedEdges
 from bokeh.plotting import curdoc, figure
@@ -76,6 +76,7 @@ def file_callback(attr, old, new):
 
 def create_figure(df):
     if not df.empty:
+
         pop_names = [populations.iloc[pop_id]['population_name'] if pop_id != -1 else '???'
                      for pop_id in df['populationID']]
         source.add(pop_names, name='pop_names')
@@ -86,7 +87,7 @@ def create_figure(df):
         kw = dict()
         kw['title'] = "%s vs %s" % (x_title, y_title)
 
-        p = figure(plot_height=800, plot_width=1200,
+        p = figure(plot_height=900, plot_width=1200,
                    tools='pan, box_zoom,reset, wheel_zoom, box_select, tap, save',
                    toolbar_location="above", **kw)
         p.add_tools(LassoSelectTool(select_every_mousemove=False))
@@ -155,10 +156,21 @@ def create_figure(df):
         p.add_tools(draw_tool)
         p.toolbar.active_tap = draw_tool
 
+        new_columns = [
+            TableColumn(field=x.value, title=x.value),
+            TableColumn(field=y.value, title=y.value),
+            TableColumn(field=color.value, title=color.value),
+            TableColumn(field=size.value, title=size.value),
+            TableColumn(field='pop_names', title="population"),
+        ]
+        data_table.columns = new_columns
+        data_table.source = source
+        layout.children[2] = DataTable(source=source, columns=new_columns, width=400, height=850)
+        # data_table.update()
 
         return p
 
-    p = figure(plot_height=800, plot_width=1200,
+    p = figure(plot_height=900, plot_width=1200,
                tools='pan, box_zoom,reset, wheel_zoom, box_select, lasso_select,tap',
                toolbar_location="above")
     return p
@@ -166,6 +178,7 @@ def create_figure(df):
 
 # trying drawing using graphs, but missing easily moving of the points
 def create_figure2(df):
+
     N = len(df)
     node_indices = list(range(1, N+1))
 
@@ -211,8 +224,6 @@ def create_bubble():
     selected = source.selected.indices
     df_patients.loc[selected, 'populationID'] = len(populations) - 1
     bubble_name.value = ""
-    print("leeeen", len(source.to_df()))
-    print(source.to_df().tail())
     layout.children[1] = create_figure(df_patients)
 
 
@@ -268,7 +279,13 @@ controls = widgetbox([test_data, dropdown, x, y, color, size], width=200)
 
 bubble_create = widgetbox([bubble_name, bubble], width=200)
 
-layout = row(column(controls, bubble_create), create_figure(df_patients))
+columns = [
+    TableColumn(field='x', title='')
+]
+
+data_table = DataTable(source=source, columns=columns, width=400)
+
+layout = row(column(controls, bubble_create), create_figure(df_patients), data_table)
 
 curdoc().add_root(layout)
 curdoc().title = "Flowexplore"
