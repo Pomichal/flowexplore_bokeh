@@ -8,6 +8,7 @@ from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDra
 from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn, NumberFormatter
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.graphs import NodesAndLinkedEdges
+from bokeh.models.selections import Selection
 from bokeh.plotting import curdoc, figure
 from functools import reduce
 
@@ -166,7 +167,6 @@ def create_figure(df):
         data_table.columns = new_columns
         data_table.source = source
         layout.children[2] = DataTable(source=source, columns=new_columns, width=400, height=850)
-        # data_table.update()
 
         return p
 
@@ -251,11 +251,29 @@ def load_test_data():
     size.value = 'None'
 
 
+def select_population():
+    indices = source.selected.indices
+    if len(indices) == 1:
+        population = source.data["pop_names"][indices[0]]
+        new_indices = [i for i, g in enumerate(source.data["pop_names"]) if g == population]
+        if new_indices != indices:
+            source.selected = Selection(indices=new_indices)
+    else:
+        print("bbbb")
+
+
+# file loading and update
 file_source.on_change('data', file_callback)
 
 test_data = Button(label="test data")
 test_data.on_click(load_test_data)
 
+menu = [("Upload patient data", "patient_data"), ("Upload cluster coordinates", "coordinates"),
+        ("Upload graph edges", "edges")]
+dropdown = Dropdown(label="Upload data", button_type="warning", menu=menu)
+dropdown.callback = CustomJS(args=dict(file_source=file_source), code=up.file_read_callback)
+
+# interaction with the plot
 x = Select(title='X-Axis', value='x', options=df_patients.columns.tolist())
 y = Select(title='Y-Axis', value='y', options=df_patients.columns.tolist())
 size = Select(title='Size', value='None', options=['None'] + df_patients.columns.tolist())
@@ -266,21 +284,28 @@ x.on_change('value', update)
 size.on_change('value', update)
 color.on_change('value', update)
 
+
+# create bubbles
 bubble_name = TextInput(placeholder="bubble's name", css_classes=['customTextInput'])
 bubble = Button(label="Create bubble")
 bubble.on_click(create_bubble)
 
-menu = [("Upload patient data", "patient_data"), ("Upload cluster coordinates", "coordinates"),
-        ("Upload graph edges", "edges")]
-dropdown = Dropdown(label="Upload data", button_type="warning", menu=menu)
-dropdown.callback = CustomJS(args=dict(file_source=file_source), code=up.file_read_callback)
+bubble_select = Button(label='select the whole population', button_type="primary")
+bubble_select.on_click(select_population)
+
+source.selected.js_on_change('indices', CustomJS(args=dict(source=source, button=bubble_select), code="""
+                            button.disabled = true;
+                            """)
+                             )
+
 
 controls = widgetbox([test_data, dropdown, x, y, color, size], width=200)
 
-bubble_create = widgetbox([bubble_name, bubble], width=200)
+bubble_create = widgetbox([bubble_name, bubble, bubble_select], width=200)
 
 formatter = NumberFormatter(format='0.0000')
 data_table = DataTable(source=source, columns=[], width=400)
+
 
 layout = row(column(controls, bubble_create), create_figure(df_patients), data_table)
 
