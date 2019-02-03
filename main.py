@@ -5,7 +5,7 @@ from os.path import join, dirname
 from bokeh.layouts import row, widgetbox, column
 from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, \
     CustomJS, LassoSelectTool, GraphRenderer, StaticLayoutProvider, Circle, MultiLine
-from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn
+from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn, NumberFormatter
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.graphs import NodesAndLinkedEdges
 from bokeh.plotting import curdoc, figure
@@ -157,10 +157,10 @@ def create_figure(df):
         p.toolbar.active_tap = draw_tool
 
         new_columns = [
-            TableColumn(field=x.value, title=x.value),
-            TableColumn(field=y.value, title=y.value),
-            TableColumn(field=color.value, title=color.value),
-            TableColumn(field=size.value, title=size.value),
+            TableColumn(field=x.value, title=x.value, formatter=formatter),
+            TableColumn(field=y.value, title=y.value, formatter=formatter),
+            TableColumn(field=color.value, title=color.value, formatter=formatter),
+            TableColumn(field=size.value, title=size.value, formatter=formatter),
             TableColumn(field='pop_names', title="population"),
         ]
         data_table.columns = new_columns
@@ -279,11 +279,8 @@ controls = widgetbox([test_data, dropdown, x, y, color, size], width=200)
 
 bubble_create = widgetbox([bubble_name, bubble], width=200)
 
-columns = [
-    TableColumn(field='x', title='')
-]
-
-data_table = DataTable(source=source, columns=columns, width=400)
+formatter = NumberFormatter(format='0.0000')
+data_table = DataTable(source=source, columns=[], width=400)
 
 layout = row(column(controls, bubble_create), create_figure(df_patients), data_table)
 
