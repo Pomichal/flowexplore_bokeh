@@ -149,29 +149,12 @@ def create_figure(df):
                 ("(x,y)", "($x, $y)"),
             ],
             renderers=[renderer]
-            # formatters={
-            #     'date': 'datetime',  # use 'datetime' formatter for 'date' field
-            #     'adj close': 'printf',  # use 'printf' formatter for 'adj close' field
-            # use default 'numeral' formatter for other fields
-            # },
         )
         p.add_tools(hover)
         draw_tool = PointDrawTool(renderers=[renderer], empty_value='black', add=False)
         p.add_tools(draw_tool)
         p.toolbar.active_tap = draw_tool
 
-        # plot styling
-        # p.title.text_color = "white"
-        # p.background_fill_color = "#1f1f1f"
-        # p.border_fill_color = "#2f2f2f"
-        # p.xaxis.major_label_text_color = "white"
-        # p.xaxis.axis_line_color = "white"
-        # p.xaxis.major_tick_line_color = "white"
-        # p.xaxis.minor_tick_line_color = "white"
-        # p.yaxis.major_label_text_color = "white"
-        # p.yaxis.axis_line_color = "white"
-        # p.yaxis.major_tick_line_color = "white"
-        # p.yaxis.minor_tick_line_color = "white"
 
         return p
 
@@ -181,6 +164,7 @@ def create_figure(df):
     return p
 
 
+# trying drawing using graphs, but missing easily moving of the points
 def create_figure2(df):
     N = len(df)
     node_indices = list(range(1, N+1))
@@ -209,7 +193,7 @@ def create_figure2(df):
 
     plot.renderers.append(graph)
 
-    draw_tool = PointDrawTool(add=False)
+    draw_tool = PointDrawTool(add=False, renderers=[graph])
     plot.add_tools(draw_tool)
     return plot
 
@@ -245,7 +229,7 @@ def load_test_data():
     dropdown.button_type = "success"
     df_patients = hf.prepare_data(patient_data, coordinates)
     source = ColumnDataSource(df_patients)
-    layout.children[1] = create_figure2(df_patients)
+    layout.children[1] = create_figure(df_patients)
     x.options = df_patients.columns.tolist()
     x.value = 'x'
     y.options = df_patients.columns.tolist()
