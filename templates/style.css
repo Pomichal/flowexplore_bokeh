@@ -11,3 +11,12 @@ body {
       width: 154px;
       min-width: 70% !important;
 }
+
+.slick-header-column {
+            background-color: #5F5F5F !important;
+            background-image: none !important;
+}
+
+.bk-data-table *{
+    color: black;
+}

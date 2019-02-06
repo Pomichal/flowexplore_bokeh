@@ -166,8 +166,12 @@ def create_figure(df):
         ]
         data_table.columns = new_columns
         data_table.source = source
-        layout.children[2] = DataTable(source=source, columns=new_columns, width=400, height=850)
-
+        layout.children[2] = DataTable(source=source, columns=new_columns, width=400, height=850,
+                                       reorderable=True)
+        print(df_patients.shape[1])
+        download.callback = CustomJS(args=dict(source=source, columns=" ".join(['x', 'y']),
+                                               num_of_columns=2),
+                                     code=open(join(dirname(__file__), "static/js/download.js")).read())
         return p
 
     p = figure(plot_height=900, plot_width=1200,
@@ -176,7 +180,7 @@ def create_figure(df):
     return p
 
 
-# trying drawing using graphs, but missing easily moving of the points
+# trying drawing using graphs, but missing easily moving of vertices
 def create_figure2(df):
 
     N = len(df)
@@ -293,6 +297,8 @@ bubble.on_click(create_bubble)
 bubble_select = Button(label='select the whole population', button_type="primary")
 bubble_select.on_click(select_population)
 
+download = Button(label="download", button_type="primary")
+
 source.selected.js_on_change('indices', CustomJS(args=dict(source=source, button=bubble_select), code="""
                             button.disabled = true;
                             """)
@@ -301,10 +307,11 @@ source.selected.js_on_change('indices', CustomJS(args=dict(source=source, button
 
 controls = widgetbox([test_data, dropdown, x, y, color, size], width=200)
 
-bubble_create = widgetbox([bubble_name, bubble, bubble_select], width=200)
+bubble_create = widgetbox([bubble_name, bubble, bubble_select, download], width=200)
 
 formatter = NumberFormatter(format='0.0000')
 data_table = DataTable(source=source, columns=[], width=400)
+data_table.reorderable = True
 
 
 layout = row(column(controls, bubble_create), create_figure(df_patients), data_table)
