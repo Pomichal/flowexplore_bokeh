@@ -31,7 +31,7 @@ source = ColumnDataSource()
 population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))
 
 
-def file_callback(attr, old, new):
+def file_callback(attr, old, new):  # TODO file check
     global patient_data
     global coordinates
     global edges
@@ -138,9 +138,10 @@ def create_figure(df):
                                 source=source)
 
         # for line in range(0, edges.shape[0]):
-        #     p.line([edges.loc[line, 'from_x'], edges.loc[line, 'to_x']],
-        #            [edges.loc[line, 'from_y'], edges.loc[line, 'to_y']],
-        #            line_width=0.5, color='white')
+            # print(df.loc[edges.loc[line, 'edges.from']-1, 'x'])
+            # p.line([df.loc[edges.loc[line, 'edges.from']-1, 'x'], df.loc[edges.loc[line, 'edges.to']-1, 'x']],
+            #        [df.loc[edges.loc[line, 'edges.from']-1, 'y'], df.loc[edges.loc[line, 'edges.to']-1, 'y']],
+            #        line_width=0.5, color='white')
 
         hover = HoverTool(
             tooltips=[
@@ -153,7 +154,7 @@ def create_figure(df):
             renderers=[renderer]
         )
         p.add_tools(hover)
-        draw_tool = PointDrawTool(renderers=[renderer], empty_value='black', add=False)
+        draw_tool = PointDrawTool(renderers=[renderer], add=False)
         p.add_tools(draw_tool)
         p.toolbar.active_tap = draw_tool
 
@@ -263,7 +264,7 @@ def select_population():
         if new_indices != indices:
             source.selected = Selection(indices=new_indices)
     else:
-        print("bbbb")
+        print("WARNING: SELECT ONLY ONE NODE")  # TODO create warning message in UI!
 
 
 # file loading and update
@@ -287,7 +288,6 @@ y.on_change('value', update)
 x.on_change('value', update)
 size.on_change('value', update)
 color.on_change('value', update)
-
 
 # create bubbles
 bubble_name = TextInput(placeholder="bubble's name", css_classes=['customTextInput'])
