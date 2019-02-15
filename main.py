@@ -5,7 +5,7 @@ from os.path import join, dirname
 from bokeh.layouts import row, widgetbox, column
 from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, \
     CustomJS, LassoSelectTool, GraphRenderer, StaticLayoutProvider, Circle, MultiLine
-from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn, NumberFormatter
+from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn, NumberFormatter, Panel, Tabs
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.graphs import NodesAndLinkedEdges
 from bokeh.models.selections import Selection
@@ -96,6 +96,18 @@ def create_figure(df):
         p.xaxis.axis_label = x_title
         p.yaxis.axis_label = y_title
 
+        # add lines
+        # print(source.data['x'][0])
+        lines_from = []
+        lines_to = []
+        for line in range(0, edges.shape[0]):
+            lines_from.append([source.data[x.value][edges.loc[line, 'edges.from'] - 1],  # TODO filter possible nan values
+                               source.data[x.value][edges.loc[line, 'edges.to'] - 1]])
+            lines_to.append([source.data[y.value][edges.loc[line, 'edges.from'] - 1],  # TODO filter possible nan values
+                             source.data[y.value][edges.loc[line, 'edges.to'] - 1]])
+
+        lines_renderer = p.multi_line(lines_from, lines_to, line_width=0.5, color='white')
+
         # mark populations
         line_color = [populations.iloc[pop_id]['color'] if pop_id != -1 else 'white'
                       for pop_id in df['populationID']]
@@ -106,7 +118,7 @@ def create_figure(df):
 
         if size.value != 'None':
             sizes = [hf.scale(value, df[size.value].min(),
-                              df[size.value].max()) if not np.isnan(value) else 3 for value in df[size.value]]
+                              df[size.value].max()) if not np.isnan(value) and value != 0 else 7 for value in df[size.value]]
         else:
             sizes = [15 for _ in df[x.value]]
         source.add(sizes, name='sz')
@@ -137,12 +149,6 @@ def create_figure(df):
                                 hover_color='white', hover_alpha=0.5,
                                 source=source)
 
-        # for line in range(0, edges.shape[0]):
-            # print(df.loc[edges.loc[line, 'edges.from']-1, 'x'])
-            # p.line([df.loc[edges.loc[line, 'edges.from']-1, 'x'], df.loc[edges.loc[line, 'edges.to']-1, 'x']],
-            #        [df.loc[edges.loc[line, 'edges.from']-1, 'y'], df.loc[edges.loc[line, 'edges.to']-1, 'y']],
-            #        line_width=0.5, color='white')
-
         hover = HoverTool(
             tooltips=[
                 ("index", "$index"),
@@ -154,7 +160,8 @@ def create_figure(df):
             renderers=[renderer]
         )
         p.add_tools(hover)
-        draw_tool = PointDrawTool(renderers=[renderer], add=False)
+        draw_tool = PointDrawTool(renderers=[renderer, lines_renderer], add=False)
+        # draw_tool = PointDrawTool(renderers=[renderer], add=False)
         p.add_tools(draw_tool)
         p.toolbar.active_tap = draw_tool
 
@@ -238,13 +245,15 @@ def load_test_data():
     global edges
     global df_patients
     global source
-    patient_data = pd.read_csv(join(dirname(__file__), 'data/pat_data.csv'))
-    coordinates = pd.read_csv(join(dirname(__file__), 'data/coordinates.csv'))
-    edges = pd.read_csv(join(dirname(__file__), 'data/edges.csv'))
+    patient_data = pd.read_csv(join(dirname(__file__), 'data/test_pat_data.csv'))
+    coordinates = pd.read_csv(join(dirname(__file__), 'data/test_coordinates.csv'))
+    edges = pd.read_csv(join(dirname(__file__), 'data/test_edges.csv'))
 
     dropdown.button_type = "success"
     df_patients = hf.prepare_data(patient_data, coordinates)
     source = ColumnDataSource(df_patients)
+    print(df_patients.to_dict())
+    # source.data = df_patients.to_dict()   # TODO create valid dictionary
     layout.children[1] = create_figure(df_patients)
     x.options = df_patients.columns.tolist()
     x.value = 'x'
@@ -316,5 +325,27 @@ data_table.reorderable = True
 
 layout = row(column(controls, bubble_create), create_figure(df_patients), data_table)
 
-curdoc().add_root(layout)
+tab1 = Panel(child=layout, title="population view")
+
+b = Button(label="wewe")
+
+tab2 = Panel(child=b, title="group selection view")
+
+c = Button(label="wewe")
+
+tab3 = Panel(child=c, title="test results view")
+
+tabs = Tabs(tabs=[tab1, tab2])
+
+# p1 = figure(plot_width=300, plot_height=300)
+# p1.circle([1, 2, 3, 4, 5], [6, 7, 2, 4, 5], size=20, color="navy", alpha=0.5)
+# tab1 = Panel(child=p1, title="circle")
+
+# p2 = figure(plot_width=300, plot_height=300)
+# p2.line([1, 2, 3, 4, 5], [6, 7, 2, 4, 5], line_width=3, color="navy", alpha=0.5)
+# tab2 = Panel(child=p2, title="line")
+
+tabs2 = Tabs(tabs=[tab1, tab2, tab3])
+
+curdoc().add_root(tabs2)
 curdoc().title = "Flowexplore"

@@ -1,3 +1,4 @@
+# TODO change to pure js
 file_read_callback = """
 function read_file(filename) {
     var reader = new FileReader();
