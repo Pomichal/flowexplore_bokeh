@@ -31,7 +31,7 @@ source = ColumnDataSource()
 population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))
 
 
-def file_callback(attr, old, new):  # TODO file check
+def file_callback(attr, old, new):  # TODO file check, upload multiple patient data, upload populations
     global patient_data
     global coordinates
     global edges
@@ -101,8 +101,9 @@ def create_figure(df):
         lines_from = []
         lines_to = []
         for line in range(0, edges.shape[0]):
-            lines_from.append([source.data[x.value][edges.loc[line, 'edges.from'] - 1],  # TODO filter possible nan values
-                               source.data[x.value][edges.loc[line, 'edges.to'] - 1]])
+            lines_from.append(
+                [source.data[x.value][edges.loc[line, 'edges.from'] - 1],  # TODO filter possible nan values
+                 source.data[x.value][edges.loc[line, 'edges.to'] - 1]])
             lines_to.append([source.data[y.value][edges.loc[line, 'edges.from'] - 1],  # TODO filter possible nan values
                              source.data[y.value][edges.loc[line, 'edges.to'] - 1]])
 
@@ -118,7 +119,8 @@ def create_figure(df):
 
         if size.value != 'None':
             sizes = [hf.scale(value, df[size.value].min(),
-                              df[size.value].max()) if not np.isnan(value) and value != 0 else 7 for value in df[size.value]]
+                              df[size.value].max()) if not np.isnan(value) and value != 0 else 7 for value in
+                     df[size.value]]
         else:
             sizes = [15 for _ in df[x.value]]
         source.add(sizes, name='sz')
@@ -190,9 +192,8 @@ def create_figure(df):
 
 # trying drawing using graphs, but missing easily moving of vertices
 def create_figure2(df):
-
     N = len(df)
-    node_indices = list(range(1, N+1))
+    node_indices = list(range(1, N + 1))
 
     plot = figure(title='Graph Layout Demonstration', x_range=(-1.1, 600), y_range=(-1.1, 600),
                   tools='pan, wheel_zoom, box_select', toolbar_location='above')
@@ -279,9 +280,13 @@ def select_population():
 # file loading and update
 file_source.on_change('data', file_callback)
 
+# TAB1 population view ----------------------------------------------------------------------- TAB1 population view
+
+# test data loading, only for testing
 test_data = Button(label="test data")
 test_data.on_click(load_test_data)
 
+# upload files
 menu = [("Upload patient data", "patient_data"), ("Upload cluster coordinates", "coordinates"),
         ("Upload graph edges", "edges")]
 dropdown = Dropdown(label="Upload data", button_type="warning", menu=menu)
@@ -303,49 +308,47 @@ bubble_name = TextInput(placeholder="bubble's name", css_classes=['customTextInp
 bubble = Button(label="Create bubble")
 bubble.on_click(create_bubble)
 
+# select population
 bubble_select = Button(label='select the whole population', button_type="primary")
 bubble_select.on_click(select_population)
 
+# TODO selected on change callback
+# source.selected.js_on_change('indices', CustomJS(args=dict(source=source, button=bubble_select), code="""
+#                             button.disabled = true;
+#                             """)
+#                              )
+
+
+# download data
 download = Button(label="download", button_type="primary")
-
-source.selected.js_on_change('indices', CustomJS(args=dict(source=source, button=bubble_select), code="""
-                            button.disabled = true;
-                            """)
-                             )
-
 
 controls = widgetbox([test_data, dropdown, x, y, color, size], width=200)
 
-bubble_create = widgetbox([bubble_name, bubble, bubble_select, download], width=200)
+bubble_tools = widgetbox([bubble_name, bubble, bubble_select, download], width=200)
 
+# data table
 formatter = NumberFormatter(format='0.0000')
 data_table = DataTable(source=source, columns=[], width=400)
 data_table.reorderable = True
 
+tab1 = Panel(child=row(column(controls, bubble_tools),
+                       create_figure(df_patients), data_table), title="population view")
 
-layout = row(column(controls, bubble_create), create_figure(df_patients), data_table)
-
-tab1 = Panel(child=layout, title="population view")
+# TAB2 group selection ----------------------------------------------------------------------- TAB2 group selection
 
 b = Button(label="wewe")
 
 tab2 = Panel(child=b, title="group selection view")
 
+# TAB3 test results ------------------------------------------------------------------------ TAB3 test results
+
 c = Button(label="wewe")
 
 tab3 = Panel(child=c, title="test results view")
 
-tabs = Tabs(tabs=[tab1, tab2])
+# FINAL LAYOUT ------------------------------------------------------------------------------------- FINAL LAYOUT
 
-# p1 = figure(plot_width=300, plot_height=300)
-# p1.circle([1, 2, 3, 4, 5], [6, 7, 2, 4, 5], size=20, color="navy", alpha=0.5)
-# tab1 = Panel(child=p1, title="circle")
+tabs = Tabs(tabs=[tab1, tab2, tab3])
 
-# p2 = figure(plot_width=300, plot_height=300)
-# p2.line([1, 2, 3, 4, 5], [6, 7, 2, 4, 5], line_width=3, color="navy", alpha=0.5)
-# tab2 = Panel(child=p2, title="line")
-
-tabs2 = Tabs(tabs=[tab1, tab2, tab3])
-
-curdoc().add_root(tabs2)
+curdoc().add_root(tabs)
 curdoc().title = "Flowexplore"
