@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import math
 from os.path import join, dirname
 from bokeh.layouts import row, widgetbox, column
 from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, \
@@ -27,7 +26,7 @@ df_patients = pd.DataFrame()
 populations = pd.DataFrame()
 source = ColumnDataSource()
 
-population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))
+population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))   # TODO add more colors
 
 
 def file_callback(attr, old, new):  # TODO file check, upload multiple patient data, upload populations
@@ -57,7 +56,7 @@ def file_callback(attr, old, new):  # TODO file check, upload multiple patient d
         dropdown.menu[2] = ("edges ok", 'edges')
     else:
         print("something went wrong, unknown dropdown value")
-    if reduce(lambda a, b: a and b, [True if 'ok' in string[0] else False for string in dropdown.menu]):
+    if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in dropdown.menu]):
         dropdown.button_type = "success"
         df_patients = hf.prepare_data(patient_data, coordinates)
         source = ColumnDataSource(df_patients)
@@ -97,14 +96,15 @@ def create_figure(df):
 
         # add lines
         # print(source.data['x'][0])
+        print('WWWWW', edges.iloc[0, 0])
         lines_from = []
         lines_to = []
         for line in range(0, edges.shape[0]):
             lines_from.append(
-                [source.data[x.value][edges.loc[line, 'edges.from'] - 1],  # TODO filter possible nan values
-                 source.data[x.value][edges.loc[line, 'edges.to'] - 1]])
-            lines_to.append([source.data[y.value][edges.loc[line, 'edges.from'] - 1],  # TODO filter possible nan values
-                             source.data[y.value][edges.loc[line, 'edges.to'] - 1]])
+                [source.data[x.value][edges.iloc[line, 1] - 1],  # TODO filter possible nan values
+                 source.data[x.value][edges.iloc[line, 2] - 1]])
+            lines_to.append([source.data[y.value][edges.iloc[line, 1] - 1],  # TODO filter possible nan values
+                             source.data[y.value][edges.iloc[line, 2] - 1]])
 
         lines_renderer = p.multi_line(lines_from, lines_to, line_width=0.5, color='white')
 
@@ -211,9 +211,9 @@ def create_figure2(df):
         end=edges['edges.to'].tolist())
 
     # start of layout code
-    x = df['x']
-    y = df['y']
-    graph_layout = dict(zip(node_indices, zip(x, y)))
+    xx = df['x']
+    yy = df['y']
+    graph_layout = dict(zip(node_indices, zip(xx, yy)))
     graph.layout_provider = StaticLayoutProvider(graph_layout=graph_layout)
 
     plot.renderers.append(graph)
@@ -290,7 +290,8 @@ menu = [("Upload patient data", "patient_data"), ("Upload cluster coordinates", 
         ("Upload graph edges", "edges")]
 dropdown = Dropdown(label="Upload data", button_type="warning", menu=menu)
 # dropdown.callback = CustomJS(args=dict(file_source=file_source), code=up.file_read_callback)
-dropdown.callback = CustomJS(args=dict(file_source=file_source), code=open(join(dirname(__file__), "static/js/upload.js")).read())
+dropdown.callback = CustomJS(args=dict(file_source=file_source),
+                             code=open(join(dirname(__file__), "static/js/upload.js")).read())
 
 # interaction with the plot
 x = Select(title='X-Axis', value='x', options=df_patients.columns.tolist())

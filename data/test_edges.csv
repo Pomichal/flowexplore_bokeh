@@ -1,2 +1,3 @@
-,edges.from,edges.to
+,edges.from,edges.to, edges.weight
 0,1,2
+1,2,3
