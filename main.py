@@ -288,16 +288,37 @@ def load_test_data():
     global edges
     global df_viz
     global source
-    patient_data = pd.read_csv(join(dirname(__file__), 'data/test_pat_data.csv'))
+    patient_data = pd.read_csv(join(dirname(__file__), 'data/patient_1.csv'))
+    patient_data2 = pd.read_csv(join(dirname(__file__), 'data/patient_2.csv'))
     coordinates = pd.read_csv(join(dirname(__file__), 'data/test_coordinates.csv'))
     edges = pd.read_csv(join(dirname(__file__), 'data/test_edges.csv'))
 
-    tree_dropdown.button_type = "success"
-    df_viz = hf.prepare_data(patient_data, coordinates)
-    source = ColumnDataSource(df_viz)
-    # print(df_patients.to_dict())
-    # source.data = df_patients.to_dict()   # TODO create valid dictionary
-    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+
+    tree['coordinates'] = coordinates
+    tree_dropdown.menu[0] = ("coordinates ok ( X )", 'coordinates')
+    df_viz['x'] = tree['coordinates'].iloc[:, 1].values
+    df_viz['y'] = tree['coordinates'].iloc[:, 2].values
+    df_viz['populationID'] = -1
+    source.data = df_viz.to_dict(orient='list')
+
+    tree['edges'] = edges
+    tree_dropdown.menu[1] = ("edges ok + filename + )", 'edges')
+
+    ind = "1"
+    if 'Unnamed: 0' in patient_data.columns:
+        patient_data.drop(columns=['Unnamed: 0'], inplace=True)
+    patients_data[ind] = patient_data
+    patient.options = patient.options + [ind]
+    # patient.value = ind/
+
+    ind = "2"
+    if 'Unnamed: 0' in patient_data2.columns:
+        patient_data2.drop(columns=['Unnamed: 0'], inplace=True)
+    patients_data[ind] = patient_data2
+    patient.options = patient.options + [ind]
+    # patient.value = ind
+
+    # layout.children[1] = create_figure(df_viz, tree['edges'], populations)
     x.options = df_viz.columns.tolist()
     x.value = 'x'
     y.options = df_viz.columns.tolist()
@@ -306,6 +327,9 @@ def load_test_data():
     color.value = 'None'
     size.options = ['None'] + df_viz.columns.tolist()
     size.value = 'None'
+
+    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+
 
 
 def select_population():
@@ -338,7 +362,7 @@ def select_patient(attr, old, new):
             drop_cols = map(lambda a: a if a not in ['x', 'y', 'populationID'] else None, df_viz.columns.tolist())
             df_viz.drop(columns=filter(lambda v: v is not None, drop_cols), inplace=True)
             df_viz = df_viz.join(patients_data[patient.value])
-            print(df_viz)
+            # print(df_viz)
             source.data = df_viz.to_dict(orient='list')
             x.options = df_viz.columns.tolist()
             x.value = 'x' if 'x' in df_viz.columns.tolist() else df_viz.columns.tolist()[0]
@@ -431,9 +455,10 @@ tab1 = Panel(child=layout, title="population view")
 
 # TAB2 group selection ----------------------------------------------------------------------- TAB2 group selection
 
-b = Button(label="wewe")
+create_bubble_stats = Button(label="Create bubble stats", width=200)
 
-tab2 = Panel(child=b, title="group selection view")
+tab2 = Panel(child=create_bubble_stats, title="group selection view")
+
 
 # TAB3 test results ------------------------------------------------------------------------ TAB3 test results
 
