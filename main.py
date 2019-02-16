@@ -19,11 +19,15 @@ import help_functions as hf
 file_source = ColumnDataSource({'file_contents': [], 'file_name': []})
 
 patient_data = pd.DataFrame()
+
+tree = {'coordinates': pd.DataFrame(), 'edges': pd.DataFrame()}
 coordinates = pd.DataFrame()
 edges = pd.DataFrame()
 
-df_patients = pd.DataFrame()
+df_viz = pd.DataFrame()
+
 populations = pd.DataFrame()
+
 source = ColumnDataSource()
 
 population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))   # TODO add more colors
@@ -33,7 +37,7 @@ def file_callback(attr, old, new):  # TODO file check, upload multiple patient d
     global patient_data
     global coordinates
     global edges
-    global df_patients
+    global df_viz
     global source
 
     filename = file_source.data['file_name']
@@ -46,56 +50,55 @@ def file_callback(attr, old, new):  # TODO file check, upload multiple patient d
     df = pd.read_csv(file_io)
     # print("file contents:")
     # print(df)
-    if dropdown.value == 'coordinates':
-        coordinates = df
-        dropdown.menu[0] = ("coordinates ok (" + filename[0] + ")", 'coordinates')
-        df_patients['x'] = coordinates.iloc[:, 1].values
-        df_patients['y'] = coordinates.iloc[:, 2].values
-        df_patients['populationID'] = -1
+    if tree_dropdown.value == 'coordinates':
+        tree['coordinates'] = df
+        tree_dropdown.menu[0] = ("coordinates ok (" + filename[0] + ")", 'coordinates')
+        df_viz['x'] = tree['coordinates'].iloc[:, 1].values
+        df_viz['y'] = tree['coordinates'].iloc[:, 2].values
+        df_viz['populationID'] = -1
         # source = ColumnDataSource(df_patients)
-        source.data = df_patients.to_dict(orient='list')
-        layout.children[1] = create_figure(df_patients)
-        x.options = df_patients.columns.tolist()
+        source.data = df_viz.to_dict(orient='list')
+        layout.children[1] = create_figure(df_viz, tree['edges'])
+        x.options = df_viz.columns.tolist()
         x.value = 'x'
-        y.options = df_patients.columns.tolist()
+        y.options = df_viz.columns.tolist()
         y.value = 'y'
-        color.options = ['None'] + df_patients.columns.tolist()
+        color.options = ['None'] + df_viz.columns.tolist()
         color.value = 'None'
-        size.options = ['None'] + df_patients.columns.tolist()
+        size.options = ['None'] + df_viz.columns.tolist()
         size.value = 'None'
 
-    elif dropdown.value == 'edges':
-        edges = df
-        dropdown.menu[1] = ("edges ok (" + filename[0] + ")", 'edges')
-        layout.children[1] = create_figure(df_patients)
-
-    elif dropdown.value == 'patient_data':
-        patient_data = df
-        # dropdown.menu[0] = ("patient data ok", 'patient_data')
-        dropdown.menu[2] = ("patient data ok (" + filename[0] + ")", 'patient_data')
-    elif dropdown.value == 'population_data':
-        pass
+    elif tree_dropdown.value == 'edges':
+        tree['edges'] = df
+        tree_dropdown.menu[1] = ("edges ok (" + filename[0] + ")", 'edges')
+        layout.children[1] = create_figure(df_viz, tree['edges'])
+    #
+    # elif tree_dropdown.value == 'patient_data':
+    #     patient_data = df
+    #     # dropdown.menu[0] = ("patient data ok", 'patient_data')
+    #     tree_dropdown.menu[2] = ("patient data ok (" + filename[0] + ")", 'patient_data')
+    # elif tree_dropdown.value == 'population_data':
+    #     pass
     else:
         print("something went wrong, unknown dropdown value")   # TODO error message?
-    if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in dropdown.menu]):
-        dropdown.button_type = "success"
-        df_patients = hf.prepare_data(patient_data, coordinates)
-        source = ColumnDataSource(df_patients)
-        layout.children[1] = create_figure(df_patients)
-        x.options = df_patients.columns.tolist()
-        x.value = 'x'
-        y.options = df_patients.columns.tolist()
-        y.value = 'y'
-        color.options = ['None'] + df_patients.columns.tolist()
-        color.value = 'None'
-        size.options = ['None'] + df_patients.columns.tolist()
-        size.value = 'None'
+    if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in tree_dropdown.menu]):
+        tree_dropdown.button_type = "success"
+        # df_patients = hf.prepare_data(patient_data, coordinates)
+        # source = ColumnDataSource(df_patients)
+        # layout.children[1] = create_figure(df_patients)
+        # x.options = df_patients.columns.tolist()
+        # x.value = 'x'
+        # y.options = df_patients.columns.tolist()
+        # y.value = 'y'
+        # color.options = ['None'] + df_patients.columns.tolist()
+        # color.value = 'None'
+        # size.options = ['None'] + df_patients.columns.tolist()
+        # size.value = 'None'
         # print(df_patients.head())
         # print(edges.head())
 
 
-def create_figure(df, df_edges=edges, df_populations=populations):
-    print(df_edges.head())
+def create_figure(df, df_edges, df_populations=populations):
     if not df.empty:
 
         pop_names = [populations.iloc[pop_id]['population_name'] if pop_id != -1 else '???'
@@ -121,12 +124,12 @@ def create_figure(df, df_edges=edges, df_populations=populations):
         if not df_edges.empty:
             lines_from = []
             lines_to = []
-            for line in range(0, edges.shape[0]):
+            for line in range(0, df_edges.shape[0]):
                 lines_from.append(
-                    [source.data[x.value][edges.iloc[line, 1] - 1],  # TODO filter possible nan values
-                     source.data[x.value][edges.iloc[line, 2] - 1]])
-                lines_to.append([source.data[y.value][edges.iloc[line, 1] - 1],  # TODO filter possible nan values
-                                 source.data[y.value][edges.iloc[line, 2] - 1]])
+                    [source.data[x.value][df_edges.iloc[line, 1] - 1],  # TODO filter possible nan values
+                     source.data[x.value][df_edges.iloc[line, 2] - 1]])
+                lines_to.append([source.data[y.value][df_edges.iloc[line, 1] - 1],  # TODO filter possible nan values
+                                 source.data[y.value][df_edges.iloc[line, 2] - 1]])
 
             lines_renderer = p.multi_line(lines_from, lines_to, line_width=0.5, color='white')
         else:
@@ -251,7 +254,7 @@ def create_figure2(df):
 
 
 def update(attr, old, new):
-    layout.children[1] = create_figure(df_patients)
+    layout.children[1] = create_figure(df_viz, tree['edges'])
 
 
 def create_bubble():
@@ -261,34 +264,34 @@ def create_bubble():
                                       'color': population_colors.loc[len(populations), 'color_name']},
                                      ignore_index=True)
     selected = source.selected.indices
-    df_patients.loc[selected, 'populationID'] = len(populations) - 1
+    df_viz.loc[selected, 'populationID'] = len(populations) - 1
     bubble_name.value = ""
-    layout.children[1] = create_figure(df_patients)
+    layout.children[1] = create_figure(df_viz)
 
 
 def load_test_data():
     global patient_data
     global coordinates
     global edges
-    global df_patients
+    global df_viz
     global source
     patient_data = pd.read_csv(join(dirname(__file__), 'data/test_pat_data.csv'))
     coordinates = pd.read_csv(join(dirname(__file__), 'data/test_coordinates.csv'))
     edges = pd.read_csv(join(dirname(__file__), 'data/test_edges.csv'))
 
-    dropdown.button_type = "success"
-    df_patients = hf.prepare_data(patient_data, coordinates)
-    source = ColumnDataSource(df_patients)
+    tree_dropdown.button_type = "success"
+    df_viz = hf.prepare_data(patient_data, coordinates)
+    source = ColumnDataSource(df_viz)
     # print(df_patients.to_dict())
     # source.data = df_patients.to_dict()   # TODO create valid dictionary
-    layout.children[1] = create_figure(df_patients)
-    x.options = df_patients.columns.tolist()
+    layout.children[1] = create_figure(df_viz, edges)
+    x.options = df_viz.columns.tolist()
     x.value = 'x'
-    y.options = df_patients.columns.tolist()
+    y.options = df_viz.columns.tolist()
     y.value = 'y'
-    color.options = ['None'] + df_patients.columns.tolist()
+    color.options = ['None'] + df_viz.columns.tolist()
     color.value = 'None'
-    size.options = ['None'] + df_patients.columns.tolist()
+    size.options = ['None'] + df_viz.columns.tolist()
     size.value = 'None'
 
 
@@ -313,18 +316,18 @@ test_data = Button(label="test data")
 test_data.on_click(load_test_data)
 
 # upload files
-menu = [("Upload cluster coordinates", "coordinates"), ("Upload graph edges", "edges"),
-        ("Upload patient data", "patient_data"), ("Upload population data", "population_data")]
-dropdown = Dropdown(label="Upload data", button_type="warning", menu=menu)
+menu = [("Upload cluster coordinates", "coordinates"), ("Upload graph edges", "edges")]
+        # ("Upload patient data", "patient_data"), ("Upload population data", "population_data")]
+tree_dropdown = Dropdown(label="Upload tree structure", button_type="warning", menu=menu)
 # dropdown.callback = CustomJS(args=dict(file_source=file_source), code=up.file_read_callback)
-dropdown.callback = CustomJS(args=dict(file_source=file_source),
-                             code=open(join(dirname(__file__), "static/js/upload.js")).read())
+tree_dropdown.callback = CustomJS(args=dict(file_source=file_source),
+                                  code=open(join(dirname(__file__), "static/js/upload.js")).read())
 
 # interaction with the plot
-x = Select(title='X-Axis', value='x', options=df_patients.columns.tolist())
-y = Select(title='Y-Axis', value='y', options=df_patients.columns.tolist())
-size = Select(title='Size', value='None', options=['None'] + df_patients.columns.tolist())
-color = Select(title='Color', value='None', options=['None'] + df_patients.columns.tolist())
+x = Select(title='X-Axis', value='x', options=df_viz.columns.tolist())
+y = Select(title='Y-Axis', value='y', options=df_viz.columns.tolist())
+size = Select(title='Size', value='None', options=['None'] + df_viz.columns.tolist())
+color = Select(title='Color', value='None', options=['None'] + df_viz.columns.tolist())
 
 y.on_change('value', update)
 x.on_change('value', update)
@@ -350,7 +353,7 @@ bubble_select.on_click(select_population)
 # download data
 download = Button(label="download", button_type="primary")
 
-controls = widgetbox([test_data, dropdown, x, y, color, size], width=200)
+controls = widgetbox([test_data, tree_dropdown, x, y, color, size], width=200)
 
 bubble_tools = widgetbox([bubble_name, bubble, bubble_select, download], width=200)
 
@@ -359,7 +362,7 @@ formatter = NumberFormatter(format='0.0000')
 data_table = DataTable(source=source, columns=[], width=400)
 data_table.reorderable = True
 
-layout = row(column(controls, bubble_tools), create_figure(df_patients), data_table)
+layout = row(column(controls, bubble_tools), create_figure(df_viz, tree['edges']), data_table)
 
 tab1 = Panel(child=layout, title="population view")
 
