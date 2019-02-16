@@ -220,7 +220,7 @@ def create_figure(df, df_edges, df_populations):
         # print(df_patients.shape[1])
         # download.callback = CustomJS(args=dict(source=source, columns=" ".join(['x', 'y']),
         # print(source.data['populationID'])
-        if 'x' in df_viz.columns.tolist():
+        if 'x' in df_viz.columns.tolist():  # TODO download population list
             download.callback = CustomJS(args=dict(source=source, columns=" ".join(['x', 'y', 'populationID']),
                                                    num_of_columns=3),
                                          code=open(join(dirname(__file__), "static/js/download.js")).read())
