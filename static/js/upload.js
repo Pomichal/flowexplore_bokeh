@@ -1,5 +1,3 @@
-# TODO change to pure js
-file_read_callback = """
 function read_file(filename) {
     var reader = new FileReader();
     reader.onload = load_handler;
@@ -15,7 +13,7 @@ function load_handler(event) {
 }
 
 function error_handler(evt) {
-    if(evt.target.error.name == "NotReadableError") {
+    if(evt.target.error.name === "NotReadableError") {
         alert("Can't read file!");
     }
 }
@@ -28,6 +26,5 @@ input.onchange = function(){
     } else {
         alert('FileReader is not supported in this browser');
     }
-}
+};
 input.click();
-"""

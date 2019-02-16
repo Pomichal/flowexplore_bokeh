@@ -15,7 +15,6 @@ from functools import reduce
 from io import StringIO
 import base64
 
-import upload as up
 import help_functions as hf
 
 file_source = ColumnDataSource({'file_contents': [], 'file_name': []})
@@ -290,7 +289,8 @@ test_data.on_click(load_test_data)
 menu = [("Upload patient data", "patient_data"), ("Upload cluster coordinates", "coordinates"),
         ("Upload graph edges", "edges")]
 dropdown = Dropdown(label="Upload data", button_type="warning", menu=menu)
-dropdown.callback = CustomJS(args=dict(file_source=file_source), code=up.file_read_callback)
+# dropdown.callback = CustomJS(args=dict(file_source=file_source), code=up.file_read_callback)
+dropdown.callback = CustomJS(args=dict(file_source=file_source), code=open(join(dirname(__file__), "static/js/upload.js")).read())
 
 # interaction with the plot
 x = Select(title='X-Axis', value='x', options=df_patients.columns.tolist())
@@ -331,8 +331,9 @@ formatter = NumberFormatter(format='0.0000')
 data_table = DataTable(source=source, columns=[], width=400)
 data_table.reorderable = True
 
-tab1 = Panel(child=row(column(controls, bubble_tools),
-                       create_figure(df_patients), data_table), title="population view")
+layout = row(column(controls, bubble_tools), create_figure(df_patients), data_table)
+
+tab1 = Panel(child=layout, title="population view")
 
 # TAB2 group selection ----------------------------------------------------------------------- TAB2 group selection
 
