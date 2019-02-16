@@ -56,7 +56,7 @@ def file_callback_tree(attr, old, new):  # TODO file check
         df_viz['y'] = tree['coordinates'].iloc[:, 2].values
         df_viz['populationID'] = -1
         source.data = df_viz.to_dict(orient='list')
-        layout.children[1] = create_figure(df_viz, tree['edges'])
+        layout.children[1] = create_figure(df_viz, tree['edges'], populations)
         x.options = df_viz.columns.tolist()
         x.value = 'x'
         y.options = df_viz.columns.tolist()
@@ -69,7 +69,7 @@ def file_callback_tree(attr, old, new):  # TODO file check
     elif tree_dropdown.value == 'edges':
         tree['edges'] = df
         tree_dropdown.menu[1] = ("edges ok (" + filename + ")", 'edges')
-        layout.children[1] = create_figure(df_viz, tree['edges'])
+        layout.children[1] = create_figure(df_viz, tree['edges'], populations)
     else:
         print("something went wrong, unknown dropdown value")   # TODO error message?
     if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in tree_dropdown.menu]):
@@ -96,6 +96,8 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload multiple patie
             df.drop(columns=['Unnamed: 0'], inplace=True)
         patients_data[ind] = df
         patient.options = patient.options + [ind]
+        patient.value = ind
+        layout.children[1] = create_figure(df_viz, tree['edges'], populations)
     elif pat_dropdown.value == 'population_data':   # TODO population callback
         # tree['edges'] = df
         # tree_dropdown.menu[1] = ("edges ok (" + filename[0] + ")", 'edges')
@@ -103,24 +105,9 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload multiple patie
         pass
     else:
         print("something went wrong, unknown dropdown value")  # TODO error message?
-    # if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in pat_dropdown.menu]):
-    #     tree_dropdown.button_type = "success"
-        # df_patients = hf.prepare_data(patient_data, coordinates)
-        # source = ColumnDataSource(df_patients)
-        # layout.children[1] = create_figure(df_patients)
-        # x.options = df_patients.columns.tolist()
-        # x.value = 'x'
-        # y.options = df_patients.columns.tolist()
-        # y.value = 'y'
-        # color.options = ['None'] + df_patients.columns.tolist()
-        # color.value = 'None'
-        # size.options = ['None'] + df_patients.columns.tolist()
-        # size.value = 'None'
-        # print(df_patients.head())
-        # print(edges.head())
 
 
-def create_figure(df, df_edges, df_populations=populations):
+def create_figure(df, df_edges, df_populations):
     if not df.empty:
 
         pop_names = [populations.iloc[pop_id]['population_name'] if pop_id != -1 else '???'
@@ -232,9 +219,11 @@ def create_figure(df, df_edges, df_populations=populations):
                                        reorderable=True)
         # print(df_patients.shape[1])
         # download.callback = CustomJS(args=dict(source=source, columns=" ".join(['x', 'y']),
-        download.callback = CustomJS(args=dict(source=source, columns=" ".join([x.value, y.value]),
-                                               num_of_columns=2),
-                                     code=open(join(dirname(__file__), "static/js/download.js")).read())
+        # print(source.data['populationID'])
+        if 'x' in df_viz.columns.tolist():
+            download.callback = CustomJS(args=dict(source=source, columns=" ".join(['x', 'y', 'populationID']),
+                                                   num_of_columns=3),
+                                         code=open(join(dirname(__file__), "static/js/download.js")).read())
         return p
 
     p = figure(plot_height=900, plot_width=1200,
@@ -278,7 +267,7 @@ def create_figure2(df):
 
 
 def update(attr, old, new):
-    layout.children[1] = create_figure(df_viz, tree['edges'])
+    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
 
 
 def create_bubble():
@@ -290,7 +279,7 @@ def create_bubble():
     selected = source.selected.indices
     df_viz.loc[selected, 'populationID'] = len(populations) - 1
     bubble_name.value = ""
-    layout.children[1] = create_figure(df_viz, tree['edges'])
+    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
 
 
 def load_test_data():
@@ -308,7 +297,7 @@ def load_test_data():
     source = ColumnDataSource(df_viz)
     # print(df_patients.to_dict())
     # source.data = df_patients.to_dict()   # TODO create valid dictionary
-    layout.children[1] = create_figure(df_viz, edges)
+    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
     x.options = df_viz.columns.tolist()
     x.value = 'x'
     y.options = df_viz.columns.tolist()
@@ -345,8 +334,6 @@ def select_patient(attr, old, new):
             color.value = 'None'
             size.options = ['None'] + df_viz.columns.tolist()
             size.value = 'None'
-            layout.children[1] = create_figure(df_viz, tree['edges'])
-
         else:
             drop_cols = map(lambda a: a if a not in ['x', 'y', 'populationID'] else None, df_viz.columns.tolist())
             df_viz.drop(columns=filter(lambda v: v is not None, drop_cols), inplace=True)
@@ -361,17 +348,14 @@ def select_patient(attr, old, new):
             color.value = 'None'
             size.options = ['None'] + df_viz.columns.tolist()
             size.value = 'None'
-            layout.children[1] = create_figure(df_viz, tree['edges'])
     else:
         if 'x' not in df_viz.columns.tolist():
             df_viz = pd.DataFrame()
             source.data = {}
-            layout.children[1] = create_figure(df_viz, tree['edges'])
         else:
             drop_cols = map(lambda a: a if a not in ['x', 'y', 'populationID'] else None, df_viz.columns.tolist())
             df_viz.drop(columns=filter(lambda v: v is not None, drop_cols), inplace=True)
-            layout.children[1] = create_figure(df_viz, tree['edges'])
-
+    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
 
 
 # file loading and update
@@ -441,7 +425,7 @@ formatter = NumberFormatter(format='0.0000')
 data_table = DataTable(source=source, columns=[], width=400)
 data_table.reorderable = True
 
-layout = row(column(controls, bubble_tools), create_figure(df_viz, tree['edges']), data_table)
+layout = row(column(controls, bubble_tools), create_figure(df_viz, tree['edges'], populations), data_table)
 
 tab1 = Panel(child=layout, title="population view")
 
