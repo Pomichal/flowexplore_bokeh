@@ -16,9 +16,11 @@ import base64
 
 import help_functions as hf
 
-file_source = ColumnDataSource({'file_contents': [], 'file_name': []})
+file_source_tree = ColumnDataSource({'file_contents': [], 'file_name': []})
 
-patient_data = pd.DataFrame()
+file_source_pat = ColumnDataSource({'file_contents': [], 'file_name': []})
+
+patients_data = {}
 
 tree = {'coordinates': pd.DataFrame(), 'edges': pd.DataFrame()}
 coordinates = pd.DataFrame()
@@ -33,15 +35,12 @@ source = ColumnDataSource()
 population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))   # TODO add more colors
 
 
-def file_callback(attr, old, new):  # TODO file check, upload multiple patient data, upload populations
-    global patient_data
-    global coordinates
-    global edges
+def file_callback_tree(attr, old, new):  # TODO file check
     global df_viz
     global source
 
-    filename = file_source.data['file_name']
-    raw_contents = file_source.data['file_contents'][0]
+    filename = file_source_tree.data['file_name'][0]
+    raw_contents = file_source_tree.data['file_contents'][0]
 
     # remove the prefix that JS adds
     prefix, b64_contents = raw_contents.split(",", 1)
@@ -52,11 +51,10 @@ def file_callback(attr, old, new):  # TODO file check, upload multiple patient d
     # print(df)
     if tree_dropdown.value == 'coordinates':
         tree['coordinates'] = df
-        tree_dropdown.menu[0] = ("coordinates ok (" + filename[0] + ")", 'coordinates')
+        tree_dropdown.menu[0] = ("coordinates ok (" + filename + ")", 'coordinates')
         df_viz['x'] = tree['coordinates'].iloc[:, 1].values
         df_viz['y'] = tree['coordinates'].iloc[:, 2].values
         df_viz['populationID'] = -1
-        # source = ColumnDataSource(df_patients)
         source.data = df_viz.to_dict(orient='list')
         layout.children[1] = create_figure(df_viz, tree['edges'])
         x.options = df_viz.columns.tolist()
@@ -70,19 +68,43 @@ def file_callback(attr, old, new):  # TODO file check, upload multiple patient d
 
     elif tree_dropdown.value == 'edges':
         tree['edges'] = df
-        tree_dropdown.menu[1] = ("edges ok (" + filename[0] + ")", 'edges')
+        tree_dropdown.menu[1] = ("edges ok (" + filename + ")", 'edges')
         layout.children[1] = create_figure(df_viz, tree['edges'])
-    #
-    # elif tree_dropdown.value == 'patient_data':
-    #     patient_data = df
-    #     # dropdown.menu[0] = ("patient data ok", 'patient_data')
-    #     tree_dropdown.menu[2] = ("patient data ok (" + filename[0] + ")", 'patient_data')
-    # elif tree_dropdown.value == 'population_data':
-    #     pass
     else:
         print("something went wrong, unknown dropdown value")   # TODO error message?
     if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in tree_dropdown.menu]):
         tree_dropdown.button_type = "success"
+
+
+def file_callback_pat(attr, old, new):  # TODO file check, upload multiple patients, upload population data
+    global df_viz
+    global source
+
+    filename = file_source_pat.data['file_name'][0]
+    raw_contents = file_source_pat.data['file_contents'][0]
+
+    # remove the prefix that JS adds
+    prefix, b64_contents = raw_contents.split(",", 1)
+    file_contents = base64.b64decode(b64_contents)
+    file_io = StringIO(bytes.decode(file_contents))
+    df = pd.read_csv(file_io)
+    # print("file contents:")
+    # print(df)
+    if pat_dropdown.value == 'patient_data':
+        ind = filename.split("_")[-1].split(".")[0]
+        if 'Unnamed: 0' in df.columns:
+            df.drop(columns=['Unnamed: 0'], inplace=True)
+        patients_data[ind] = df
+        patient.options = patient.options + [ind]
+    elif pat_dropdown.value == 'population_data':   # TODO population callback
+        # tree['edges'] = df
+        # tree_dropdown.menu[1] = ("edges ok (" + filename[0] + ")", 'edges')
+        # layout.children[1] = create_figure(df_viz, tree['edges'])
+        pass
+    else:
+        print("something went wrong, unknown dropdown value")  # TODO error message?
+    # if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in pat_dropdown.menu]):
+    #     tree_dropdown.button_type = "success"
         # df_patients = hf.prepare_data(patient_data, coordinates)
         # source = ColumnDataSource(df_patients)
         # layout.children[1] = create_figure(df_patients)
@@ -190,6 +212,7 @@ def create_figure(df, df_edges, df_populations=populations):
             ],
             renderers=[renderer]
         )
+
         p.add_tools(hover)
         draw_tool = PointDrawTool(renderers=[renderer, lines_renderer], add=False)
         # draw_tool = PointDrawTool(renderers=[renderer], add=False)
@@ -203,12 +226,13 @@ def create_figure(df, df_edges, df_populations=populations):
             TableColumn(field=size.value, title=size.value, formatter=formatter),
             TableColumn(field='pop_names', title="population"),
         ]
-        data_table.columns = new_columns
-        data_table.source = source
+        # data_table.columns = new_columns
+        # data_table.source = source
         layout.children[2] = DataTable(source=source, columns=new_columns, width=400, height=850,
                                        reorderable=True)
         # print(df_patients.shape[1])
-        download.callback = CustomJS(args=dict(source=source, columns=" ".join(['x', 'y']),
+        # download.callback = CustomJS(args=dict(source=source, columns=" ".join(['x', 'y']),
+        download.callback = CustomJS(args=dict(source=source, columns=" ".join([x.value, y.value]),
                                                num_of_columns=2),
                                      code=open(join(dirname(__file__), "static/js/download.js")).read())
         return p
@@ -266,7 +290,7 @@ def create_bubble():
     selected = source.selected.indices
     df_viz.loc[selected, 'populationID'] = len(populations) - 1
     bubble_name.value = ""
-    layout.children[1] = create_figure(df_viz)
+    layout.children[1] = create_figure(df_viz, tree['edges'])
 
 
 def load_test_data():
@@ -306,8 +330,54 @@ def select_population():
         print("WARNING: SELECT ONLY ONE NODE")  # TODO create warning message in UI!
 
 
+def select_patient(attr, old, new):
+    global df_viz
+    if patient.value != 'None':
+        if df_viz.empty:
+            df_viz = patients_data[patient.value]
+            df_viz['populationID'] = -1
+            source.data = df_viz.to_dict(orient='list')
+            x.options = df_viz.columns.tolist()
+            x.value = df_viz.columns.tolist()[0]
+            y.options = df_viz.columns.tolist()
+            y.value = df_viz.columns.tolist()[1]
+            color.options = ['None'] + df_viz.columns.tolist()
+            color.value = 'None'
+            size.options = ['None'] + df_viz.columns.tolist()
+            size.value = 'None'
+            layout.children[1] = create_figure(df_viz, tree['edges'])
+
+        else:
+            drop_cols = map(lambda a: a if a not in ['x', 'y', 'populationID'] else None, df_viz.columns.tolist())
+            df_viz.drop(columns=filter(lambda v: v is not None, drop_cols), inplace=True)
+            df_viz = df_viz.join(patients_data[patient.value])
+            print(df_viz)
+            source.data = df_viz.to_dict(orient='list')
+            x.options = df_viz.columns.tolist()
+            x.value = 'x' if 'x' in df_viz.columns.tolist() else df_viz.columns.tolist()[0]
+            y.options = df_viz.columns.tolist()
+            y.value = 'y' if 'y' in df_viz.columns.tolist() else df_viz.columns.tolist()[1]
+            color.options = ['None'] + df_viz.columns.tolist()
+            color.value = 'None'
+            size.options = ['None'] + df_viz.columns.tolist()
+            size.value = 'None'
+            layout.children[1] = create_figure(df_viz, tree['edges'])
+    else:
+        if 'x' not in df_viz.columns.tolist():
+            df_viz = pd.DataFrame()
+            source.data = {}
+            layout.children[1] = create_figure(df_viz, tree['edges'])
+        else:
+            drop_cols = map(lambda a: a if a not in ['x', 'y', 'populationID'] else None, df_viz.columns.tolist())
+            df_viz.drop(columns=filter(lambda v: v is not None, drop_cols), inplace=True)
+            layout.children[1] = create_figure(df_viz, tree['edges'])
+
+
+
 # file loading and update
-file_source.on_change('data', file_callback)
+file_source_tree.on_change('data', file_callback_tree)
+
+file_source_pat.on_change('data', file_callback_pat)
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view
 
@@ -315,13 +385,22 @@ file_source.on_change('data', file_callback)
 test_data = Button(label="test data")
 test_data.on_click(load_test_data)
 
-# upload files
-menu = [("Upload cluster coordinates", "coordinates"), ("Upload graph edges", "edges")]
-        # ("Upload patient data", "patient_data"), ("Upload population data", "population_data")]
-tree_dropdown = Dropdown(label="Upload tree structure", button_type="warning", menu=menu)
-# dropdown.callback = CustomJS(args=dict(file_source=file_source), code=up.file_read_callback)
-tree_dropdown.callback = CustomJS(args=dict(file_source=file_source),
+# upload tree files
+menu_tree = [("Upload cluster coordinates", "coordinates"), ("Upload graph edges", "edges")]
+tree_dropdown = Dropdown(label="Upload tree structure", button_type="warning", menu=menu_tree)
+tree_dropdown.callback = CustomJS(args=dict(file_source=file_source_tree),
                                   code=open(join(dirname(__file__), "static/js/upload.js")).read())
+
+# upload patient and population data
+menu_pat = [("Add patient data", "patient_data"), ("Upload population data", "population_data")]
+pat_dropdown = Dropdown(label="Upload patient data", button_type="warning", menu=menu_pat)
+pat_dropdown.callback = CustomJS(args=dict(file_source=file_source_pat),
+                                 code=open(join(dirname(__file__), "static/js/upload.js")).read())
+
+# select patient
+patient = Select(title='Patient', value='None', options=['None'] + df_viz.columns.tolist())
+
+patient.on_change('value', select_patient)
 
 # interaction with the plot
 x = Select(title='X-Axis', value='x', options=df_viz.columns.tolist())
@@ -353,7 +432,7 @@ bubble_select.on_click(select_population)
 # download data
 download = Button(label="download", button_type="primary")
 
-controls = widgetbox([test_data, tree_dropdown, x, y, color, size], width=200)
+controls = widgetbox([test_data, tree_dropdown, pat_dropdown, patient, x, y, color, size], width=200)
 
 bubble_tools = widgetbox([bubble_name, bubble, bubble_select, download], width=200)
 
