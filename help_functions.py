@@ -11,15 +11,15 @@ def prepare_data(df_patient, df_coordinates):
     :param df_patient: dataframe with patients data for each cluster
     :param df_coordinates: dataframe with coordinates for clusters
     """
-    df_patient['x'] = df_coordinates['layout.V1']
-    df_patient['y'] = df_coordinates['layout.V2']
+    # print("coor", df_coordinates.iloc[:, 1].values)
+    df_patient['x'] = df_coordinates.iloc[:, 1].values
+    df_patient['y'] = df_coordinates.iloc[:, 2].values
     df_patient['populationID'] = -1
     data = df_patient.drop('Unnamed: 0', axis=1)
     # print(df_patient.head())
 
     # rename attributes example
     # data.rename(index=str, columns={"csv.pbm_038.count": "count"}, inplace=True)
-
     return data
 
 

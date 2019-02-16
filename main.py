@@ -35,7 +35,8 @@ def file_callback(attr, old, new):  # TODO file check, upload multiple patient d
     global edges
     global df_patients
     global source
-    # print('filename:', file_source.data['file_name'])
+
+    filename = file_source.data['file_name']
     raw_contents = file_source.data['file_contents'][0]
 
     # remove the prefix that JS adds
@@ -45,17 +46,37 @@ def file_callback(attr, old, new):  # TODO file check, upload multiple patient d
     df = pd.read_csv(file_io)
     # print("file contents:")
     # print(df)
-    if dropdown.value == 'patient_data':
-        patient_data = df
-        dropdown.menu[0] = ("patient data ok", 'patient_data')
-    elif dropdown.value == 'coordinates':
+    if dropdown.value == 'coordinates':
         coordinates = df
-        dropdown.menu[1] = ("coordinates ok", 'coordinates')
+        dropdown.menu[0] = ("coordinates ok (" + filename[0] + ")", 'coordinates')
+        df_patients['x'] = coordinates.iloc[:, 1].values
+        df_patients['y'] = coordinates.iloc[:, 2].values
+        df_patients['populationID'] = -1
+        # source = ColumnDataSource(df_patients)
+        source.data = df_patients.to_dict(orient='list')
+        layout.children[1] = create_figure(df_patients)
+        x.options = df_patients.columns.tolist()
+        x.value = 'x'
+        y.options = df_patients.columns.tolist()
+        y.value = 'y'
+        color.options = ['None'] + df_patients.columns.tolist()
+        color.value = 'None'
+        size.options = ['None'] + df_patients.columns.tolist()
+        size.value = 'None'
+
     elif dropdown.value == 'edges':
         edges = df
-        dropdown.menu[2] = ("edges ok", 'edges')
+        dropdown.menu[1] = ("edges ok (" + filename[0] + ")", 'edges')
+        layout.children[1] = create_figure(df_patients)
+
+    elif dropdown.value == 'patient_data':
+        patient_data = df
+        # dropdown.menu[0] = ("patient data ok", 'patient_data')
+        dropdown.menu[2] = ("patient data ok (" + filename[0] + ")", 'patient_data')
+    elif dropdown.value == 'population_data':
+        pass
     else:
-        print("something went wrong, unknown dropdown value")
+        print("something went wrong, unknown dropdown value")   # TODO error message?
     if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in dropdown.menu]):
         dropdown.button_type = "success"
         df_patients = hf.prepare_data(patient_data, coordinates)
@@ -73,7 +94,8 @@ def file_callback(attr, old, new):  # TODO file check, upload multiple patient d
         # print(edges.head())
 
 
-def create_figure(df):
+def create_figure(df, df_edges=edges, df_populations=populations):
+    print(df_edges.head())
     if not df.empty:
 
         pop_names = [populations.iloc[pop_id]['population_name'] if pop_id != -1 else '???'
@@ -96,24 +118,29 @@ def create_figure(df):
 
         # add lines
         # print(source.data['x'][0])
-        print('WWWWW', edges.iloc[0, 0])
-        lines_from = []
-        lines_to = []
-        for line in range(0, edges.shape[0]):
-            lines_from.append(
-                [source.data[x.value][edges.iloc[line, 1] - 1],  # TODO filter possible nan values
-                 source.data[x.value][edges.iloc[line, 2] - 1]])
-            lines_to.append([source.data[y.value][edges.iloc[line, 1] - 1],  # TODO filter possible nan values
-                             source.data[y.value][edges.iloc[line, 2] - 1]])
+        if not df_edges.empty:
+            lines_from = []
+            lines_to = []
+            for line in range(0, edges.shape[0]):
+                lines_from.append(
+                    [source.data[x.value][edges.iloc[line, 1] - 1],  # TODO filter possible nan values
+                     source.data[x.value][edges.iloc[line, 2] - 1]])
+                lines_to.append([source.data[y.value][edges.iloc[line, 1] - 1],  # TODO filter possible nan values
+                                 source.data[y.value][edges.iloc[line, 2] - 1]])
 
-        lines_renderer = p.multi_line(lines_from, lines_to, line_width=0.5, color='white')
+            lines_renderer = p.multi_line(lines_from, lines_to, line_width=0.5, color='white')
+        else:
+            lines_renderer = None
 
         # mark populations
-        line_color = [populations.iloc[pop_id]['color'] if pop_id != -1 else 'white'
-                      for pop_id in df['populationID']]
-        source.add(line_color, name='lc')
+        line_color = ['white'] * len(df)
+        line_width = [1] * len(df)
+        if not df_populations.empty:
+            line_color = [populations.iloc[pop_id]['color'] if pop_id != -1 else 'white'
+                          for pop_id in df['populationID']]
+            line_width = [5 if lc != 'white' else 1 for lc in line_color]
 
-        line_width = [5 if lc != 'white' else 1 for lc in line_color]
+        source.add(line_color, name='lc')
         source.add(line_width, name='lw')
 
         if size.value != 'None':
@@ -177,7 +204,7 @@ def create_figure(df):
         data_table.source = source
         layout.children[2] = DataTable(source=source, columns=new_columns, width=400, height=850,
                                        reorderable=True)
-        print(df_patients.shape[1])
+        # print(df_patients.shape[1])
         download.callback = CustomJS(args=dict(source=source, columns=" ".join(['x', 'y']),
                                                num_of_columns=2),
                                      code=open(join(dirname(__file__), "static/js/download.js")).read())
@@ -252,7 +279,7 @@ def load_test_data():
     dropdown.button_type = "success"
     df_patients = hf.prepare_data(patient_data, coordinates)
     source = ColumnDataSource(df_patients)
-    print(df_patients.to_dict())
+    # print(df_patients.to_dict())
     # source.data = df_patients.to_dict()   # TODO create valid dictionary
     layout.children[1] = create_figure(df_patients)
     x.options = df_patients.columns.tolist()
@@ -286,8 +313,8 @@ test_data = Button(label="test data")
 test_data.on_click(load_test_data)
 
 # upload files
-menu = [("Upload patient data", "patient_data"), ("Upload cluster coordinates", "coordinates"),
-        ("Upload graph edges", "edges")]
+menu = [("Upload cluster coordinates", "coordinates"), ("Upload graph edges", "edges"),
+        ("Upload patient data", "patient_data"), ("Upload population data", "population_data")]
 dropdown = Dropdown(label="Upload data", button_type="warning", menu=menu)
 # dropdown.callback = CustomJS(args=dict(file_source=file_source), code=up.file_read_callback)
 dropdown.callback = CustomJS(args=dict(file_source=file_source),
