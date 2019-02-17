@@ -76,7 +76,7 @@ def file_callback_tree(attr, old, new):  # TODO file check
         tree_dropdown.button_type = "success"
 
 
-def file_callback_pat(attr, old, new):  # TODO file check, upload multiple patients, upload population data
+def file_callback_pat(attr, old, new):  # TODO file check, upload population data
     global df_viz
     global source
 
@@ -92,7 +92,7 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload multiple patie
     # print(df)
     if pat_dropdown.value == 'patient_data':
         ind = filename.split("_")[-1].split(".")[0]
-        if 'Unnamed: 0' in df.columns:
+        if 'Unnamed: 0' in df.columns:                  # TODO drop all Unnamed
             df.drop(columns=['Unnamed: 0'], inplace=True)
         patients_data[ind] = df
         patient.options = patient.options + [ind]
@@ -272,12 +272,17 @@ def update(attr, old, new):
 
 def create_bubble():
     global populations
+    global source
     # print(populations)
     populations = populations.append({'population_name': bubble_name.value,
                                       'color': population_colors.loc[len(populations), 'color_name']},
                                      ignore_index=True)
     selected = source.selected.indices
     df_viz.loc[selected, 'populationID'] = len(populations) - 1
+    patches = {
+        'populationID': [(i, len(populations) - 1) for i in selected]
+    }
+    source.patch(patches)
     bubble_name.value = ""
     layout.children[1] = create_figure(df_viz, tree['edges'], populations)
 
@@ -292,7 +297,6 @@ def load_test_data():
     patient_data2 = pd.read_csv(join(dirname(__file__), 'data/patient_2.csv'))
     coordinates = pd.read_csv(join(dirname(__file__), 'data/test_coordinates.csv'))
     edges = pd.read_csv(join(dirname(__file__), 'data/test_edges.csv'))
-
 
     tree['coordinates'] = coordinates
     tree_dropdown.menu[0] = ("coordinates ok ( X )", 'coordinates')
@@ -331,7 +335,6 @@ def load_test_data():
     layout.children[1] = create_figure(df_viz, tree['edges'], populations)
 
 
-
 def select_population():
     indices = source.selected.indices
     if len(indices) == 1:
@@ -345,6 +348,11 @@ def select_population():
 
 def select_patient(attr, old, new):
     global df_viz
+    global source
+    if old != 'None':
+        print(patients_data[old])
+        print(source.to_df()[source.to_df().columns.difference(['lc', 'lw', 'sz'])])
+        # patients_data[old] =      # TODO save source data to df ---------------------- MISSING ONE ROW
     if patient.value != 'None':
         if df_viz.empty:
             df_viz = patients_data[patient.value]
@@ -380,6 +388,16 @@ def select_patient(attr, old, new):
             drop_cols = map(lambda a: a if a not in ['x', 'y', 'populationID'] else None, df_viz.columns.tolist())
             df_viz.drop(columns=filter(lambda v: v is not None, drop_cols), inplace=True)
     layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+
+
+def create_stats_tables():
+    for pat in patients_data:
+        count = patients_data[pat].iloc[:, 1].values
+
+        for pop in range(len(populations)):
+            # clusters = patients_data[pat][patients_data[pat]['populationID'] == pop]
+            print(patients_data[pat])
+            print()
 
 
 # file loading and update
@@ -456,6 +474,7 @@ tab1 = Panel(child=layout, title="population view")
 # TAB2 group selection ----------------------------------------------------------------------- TAB2 group selection
 
 create_bubble_stats = Button(label="Create bubble stats", width=200)
+create_bubble_stats.on_click(create_stats_tables)
 
 tab2 = Panel(child=create_bubble_stats, title="group selection view")
 
