@@ -23,8 +23,6 @@ file_source_pat = ColumnDataSource({'file_contents': [], 'file_name': []})
 patients_data = {}
 
 tree = {'coordinates': pd.DataFrame(), 'edges': pd.DataFrame()}
-coordinates = pd.DataFrame()
-edges = pd.DataFrame()
 
 df_viz = pd.DataFrame()
 
@@ -108,6 +106,7 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload population dat
 
 
 def create_figure(df, df_edges, df_populations):
+
     if not df.empty:
 
         pop_names = [populations.iloc[pop_id]['population_name'] if pop_id != -1 else '???'
@@ -213,10 +212,10 @@ def create_figure(df, df_edges, df_populations):
             TableColumn(field=size.value, title=size.value, formatter=formatter),
             TableColumn(field='pop_names', title="population"),
         ]
-        # data_table.columns = new_columns
-        # data_table.source = source
-        layout.children[2] = DataTable(source=source, columns=new_columns, width=400, height=850,
-                                       reorderable=True)
+        data_table.columns = new_columns
+        data_table.source = source
+        # layout.children[2] = DataTable(source=source, columns=new_columns, width=400, height=850,
+        #                                reorderable=True)
         # print(df_patients.shape[1])
         # download.callback = CustomJS(args=dict(source=source, columns=" ".join(['x', 'y']),
         # print(source.data['populationID'])
@@ -293,6 +292,7 @@ def load_test_data():
     global edges
     global df_viz
     global source
+
     patient_data = pd.read_csv(join(dirname(__file__), 'data/patient_1.csv'))
     patient_data2 = pd.read_csv(join(dirname(__file__), 'data/patient_2.csv'))
     coordinates = pd.read_csv(join(dirname(__file__), 'data/test_coordinates.csv'))
@@ -464,8 +464,7 @@ bubble_tools = widgetbox([bubble_name, bubble, bubble_select, download], width=2
 
 # data table
 formatter = NumberFormatter(format='0.0000')
-data_table = DataTable(source=source, columns=[], width=400)
-data_table.reorderable = True
+data_table = DataTable(source=source, columns=[], width=400, height=850, reorderable=True)
 
 layout = row(column(controls, bubble_tools), create_figure(df_viz, tree['edges'], populations), data_table)
 
