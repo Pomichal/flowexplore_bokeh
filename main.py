@@ -200,7 +200,7 @@ def create_figure(df, df_edges, df_populations):
         )
 
         p.add_tools(hover)
-        draw_tool = PointDrawTool(renderers=[renderer, lines_renderer], add=False)
+        draw_tool = PointDrawTool(renderers=[renderer], add=False)
         # draw_tool = PointDrawTool(renderers=[renderer], add=False)
         p.add_tools(draw_tool)
         p.toolbar.active_tap = draw_tool
