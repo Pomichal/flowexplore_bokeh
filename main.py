@@ -30,7 +30,7 @@ populations = pd.DataFrame()
 
 source = ColumnDataSource()
 
-population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))   # TODO add more colors
+population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))  # TODO add more colors
 
 
 def file_callback_tree(attr, old, new):  # TODO file check
@@ -69,7 +69,7 @@ def file_callback_tree(attr, old, new):  # TODO file check
         tree_dropdown.menu[1] = ("edges ok (" + filename + ")", 'edges')
         layout.children[1] = create_figure(df_viz, tree['edges'], populations)
     else:
-        print("something went wrong, unknown dropdown value")   # TODO error message?
+        print("something went wrong, unknown dropdown value")  # TODO error message?
     if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in tree_dropdown.menu]):
         tree_dropdown.button_type = "success"
 
@@ -90,13 +90,13 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload population dat
     # print(df)
     if pat_dropdown.value == 'patient_data':
         ind = filename.split("_")[-1].split(".")[0]
-        if 'Unnamed: 0' in df.columns:                  # TODO drop all Unnamed
+        if 'Unnamed: 0' in df.columns:  # TODO drop all Unnamed
             df.drop(columns=['Unnamed: 0'], inplace=True)
         patients_data[ind] = df
         patient.options = patient.options + [ind]
         patient.value = ind
         layout.children[1] = create_figure(df_viz, tree['edges'], populations)
-    elif pat_dropdown.value == 'population_data':   # TODO population callback
+    elif pat_dropdown.value == 'population_data':  # TODO population callback
         # tree['edges'] = df
         # tree_dropdown.menu[1] = ("edges ok (" + filename[0] + ")", 'edges')
         # layout.children[1] = create_figure(df_viz, tree['edges'])
@@ -106,7 +106,6 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload population dat
 
 
 def create_figure(df, df_edges, df_populations):
-
     if not df.empty:
 
         pop_names = [populations.iloc[pop_id]['population_name'] if pop_id != -1 else '???'
@@ -219,9 +218,19 @@ def create_figure(df, df_edges, df_populations):
         # print(df_patients.shape[1])
         # download.callback = CustomJS(args=dict(source=source, columns=" ".join(['x', 'y']),
         # print(source.data['populationID'])
-        if 'x' in df_viz.columns.tolist():  # TODO download population list
-            download.callback = CustomJS(args=dict(source=source, columns=" ".join(['x', 'y', 'populationID']),
-                                                   num_of_columns=3),
+        if 'x' in df_viz.columns.tolist():
+            text = ""
+            if 'population_name' in populations.columns:
+                for index, population in populations.iterrows():
+                    text += population['population_name'] + ": " + \
+                           ",".join(str(e) for e in df_viz.index[df_viz['populationID'] == index].tolist()) + "\n"
+                    # print(population['population_name'])
+                    # print(df_viz.index[df_viz['populationID'] == index].tolist())
+                    print(text)
+
+            download.callback = CustomJS(args=dict(source=source,
+                                                   columns=" ".join(['x', 'y', 'populationID', 'pop_names']),
+                                                   num_of_columns=4, text=text),
                                          code=open(join(dirname(__file__), "static/js/download.js")).read())
         return p
 
@@ -349,10 +358,11 @@ def select_population():
 def select_patient(attr, old, new):
     global df_viz
     global source
-    if old != 'None':
-        print(patients_data[old])
-        print(source.to_df()[source.to_df().columns.difference(['lc', 'lw', 'sz'])])
-        # patients_data[old] =      # TODO save source data to df ---------------------- MISSING ONE ROW
+    # if old != 'None':
+    # print(patients_data[old])
+    # old_data = source.to_df()
+    # patients_data[old] = old_data[old_data.columns.difference(['lc', 'lw', 'sz', 'x', 'y', 'populationID'])]
+    # print(patients_data[old])
     if patient.value != 'None':
         if df_viz.empty:
             df_viz = patients_data[patient.value]
@@ -476,7 +486,6 @@ create_bubble_stats = Button(label="Create bubble stats", width=200)
 create_bubble_stats.on_click(create_stats_tables)
 
 tab2 = Panel(child=create_bubble_stats, title="group selection view")
-
 
 # TAB3 test results ------------------------------------------------------------------------ TAB3 test results
 

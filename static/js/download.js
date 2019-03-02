@@ -21,9 +21,11 @@ function table_to_csv(source, columns, num_of_columns) {
 }
 
 
-const filename = 'data_result.csv';
-filetext = table_to_csv(source, columns, num_of_columns);
-const blob = new Blob([filetext], { type: 'text/csv;charset=utf-8;' });
+const filename = 'new_coordinates.csv';
+const filename2 = 'populations.txt';
+csv_file = table_to_csv(source, columns, num_of_columns);
+const blob = new Blob([csv_file], { type: 'text/csv;charset=utf-8;' });
+const blob_text = new Blob([text], { type: 'text/plain' });
 
 //addresses IE
 if (navigator.msSaveBlob) {
@@ -32,6 +34,18 @@ if (navigator.msSaveBlob) {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = filename;
+    link.target = '_blank';
+    link.style.visibility = 'hidden';
+    link.dispatchEvent(new MouseEvent('click'))
+}
+
+//addresses IE
+if (navigator.msSaveBlob) {
+    navigator.msSaveBlob(blob_text, filename2)
+} else {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob_text);
+    link.download = filename2;
     link.target = '_blank';
     link.style.visibility = 'hidden';
     link.dispatchEvent(new MouseEvent('click'))
