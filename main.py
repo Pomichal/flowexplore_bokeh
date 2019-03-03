@@ -213,25 +213,25 @@ def create_figure(df, df_edges, df_populations):
         ]
         data_table.columns = new_columns
         data_table.source = source
-        # layout.children[2] = DataTable(source=source, columns=new_columns, width=400, height=850,
-        #                                reorderable=True)
-        # print(df_patients.shape[1])
-        # download.callback = CustomJS(args=dict(source=source, columns=" ".join(['x', 'y']),
-        # print(source.data['populationID'])
-        if 'x' in df_viz.columns.tolist():
-            text = ""
-            if 'population_name' in populations.columns:
-                for index, population in populations.iterrows():
-                    text += population['population_name'] + ": " + \
-                           ",".join(str(e) for e in df_viz.index[df_viz['populationID'] == index].tolist()) + "\n"
-                    # print(population['population_name'])
-                    # print(df_viz.index[df_viz['populationID'] == index].tolist())
-                    print(text)
 
+        # download new coordinates
+        if 'x' in df_viz.columns.tolist():
             download.callback = CustomJS(args=dict(source=source,
-                                                   columns=" ".join(['x', 'y', 'populationID', 'pop_names']),
-                                                   num_of_columns=4, text=text),
+                                                   columns=" ".join(['x', 'y', 'pop_names']),
+                                                   num_of_columns=3),
                                          code=open(join(dirname(__file__), "static/js/download.js")).read())
+
+        # download population list with cluster numbers
+        if 'population_name' in populations.columns:
+            text = ""
+            for index, population in populations.iterrows():
+                text += population['population_name'] + ": " + \
+                        ", ".join(str(e) for e in df_viz.index[df_viz['populationID'] == index].tolist()) + "\n\n"
+                # print(text)
+                download_populations.callback = CustomJS(args=dict(text=text),
+                                                         code=open(join(dirname(__file__),
+                                                                        "static/js/download_populations.js")).read())
+
         return p
 
     p = figure(plot_height=900, plot_width=1200,
@@ -465,12 +465,15 @@ bubble_select.on_click(select_population)
 #                              )
 
 
-# download data
+# download data new coordinates
 download = Button(label="download", button_type="primary")
+
+# download the populations
+download_populations = Button(label="download population", button_type="primary")
 
 controls = widgetbox([test_data, tree_dropdown, pat_dropdown, patient, x, y, color, size], width=200)
 
-bubble_tools = widgetbox([bubble_name, bubble, bubble_select, download], width=200)
+bubble_tools = widgetbox([bubble_name, bubble, bubble_select, download, download_populations], width=200)
 
 # data table
 formatter = NumberFormatter(format='0.0000')
