@@ -285,6 +285,7 @@ def create_bubble():
     populations = populations.append({'population_name': bubble_name.value,
                                       'color': population_colors.loc[len(populations), 'color_name']},
                                      ignore_index=True)
+    pop_list.menu.append((bubble_name.value, str(len(populations) - 1)))
     selected = source.selected.indices
     df_viz.loc[selected, 'populationID'] = len(populations) - 1
     patches = {
@@ -353,6 +354,16 @@ def select_population():
             source.selected = Selection(indices=new_indices)
     else:
         print("WARNING: SELECT ONLY ONE NODE")  # TODO create warning message in UI!
+
+
+def add_to_bubble(attr, old, new):
+    indices = source.selected.indices
+    if pop_list.value != 'None':
+        df_viz.loc[indices, 'populationID'] = int(pop_list.value)
+    else:
+        df_viz.loc[indices, 'populationID'] = -1
+
+    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
 
 
 def select_patient(attr, old, new):
@@ -458,6 +469,10 @@ bubble.on_click(create_bubble)
 bubble_select = Button(label='select the whole population', button_type="primary")
 bubble_select.on_click(select_population)
 
+# add selected to a population
+pop_list = Dropdown(label='add selected to the bubble',  menu=[('None', 'None')])
+pop_list.on_change('value', add_to_bubble)
+
 # TODO selected on change callback
 # source.selected.js_on_change('indices', CustomJS(args=dict(source=source, button=bubble_select), code="""
 #                             button.disabled = true;
@@ -473,13 +488,17 @@ download_populations = Button(label="download population", button_type="primary"
 
 controls = widgetbox([test_data, tree_dropdown, pat_dropdown, patient, x, y, color, size], width=200)
 
-bubble_tools = widgetbox([bubble_name, bubble, bubble_select, download, download_populations], width=200)
+bubble_tools = widgetbox([bubble_name, bubble, bubble_select, pop_list], width=200)
+
+download_tools = widgetbox([download, download_populations], width=200)
 
 # data table
 formatter = NumberFormatter(format='0.0000')
 data_table = DataTable(source=source, columns=[], width=400, height=850, reorderable=True)
 
-layout = row(column(controls, bubble_tools), create_figure(df_viz, tree['edges'], populations), data_table)
+layout = row(column(controls, bubble_tools, download_tools),
+             create_figure(df_viz, tree['edges'], populations),
+             data_table)
 
 tab1 = Panel(child=layout, title="population view")
 
