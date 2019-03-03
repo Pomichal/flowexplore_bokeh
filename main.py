@@ -77,6 +77,7 @@ def file_callback_tree(attr, old, new):  # TODO file check
 def file_callback_pat(attr, old, new):  # TODO file check, upload population data
     global df_viz
     global source
+    global populations
 
     filename = file_source_pat.data['file_name'][0]
     raw_contents = file_source_pat.data['file_contents'][0]
@@ -85,24 +86,49 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload population dat
     prefix, b64_contents = raw_contents.split(",", 1)
     file_contents = base64.b64decode(b64_contents)
     file_io = StringIO(bytes.decode(file_contents))
-    df = pd.read_csv(file_io)
     # print("file contents:")
     # print(df)
     if pat_dropdown.value == 'patient_data':
+        df = pd.read_csv(file_io)
         ind = filename.split("_")[-1].split(".")[0]
         if 'Unnamed: 0' in df.columns:  # TODO drop all Unnamed
             df.drop(columns=['Unnamed: 0'], inplace=True)
         patients_data[ind] = df
         patient.options = patient.options + [ind]
         patient.value = ind
-        layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+
     elif pat_dropdown.value == 'population_data':  # TODO population callback
+        text = list(iter(file_io.getvalue().splitlines()))
+        df_viz['populationID'] = -1
+        populations = pd.DataFrame()
+        for line in text:
+            if line != "":
+                split_line = line.split(":")
+                pop_name = split_line[0]
+
+                populations = populations.append({'population_name': pop_name,
+                                                  'color': population_colors.loc[len(populations), 'color_name']},
+                                                 ignore_index=True)
+                pop_list.menu.append((pop_name, str(len(populations) - 1)))
+
+                indices = [int(a) for a in split_line[1].split(",")]
+                print(indices)
+
+                df_viz.loc[indices, 'populationID'] = len(populations) - 1
+                patches = {
+                    'populationID': [(i, len(populations) - 1) for i in indices]
+                }
+                source.patch(patches)
+                bubble_name.value = ""
+
         # tree['edges'] = df
         # tree_dropdown.menu[1] = ("edges ok (" + filename[0] + ")", 'edges')
         # layout.children[1] = create_figure(df_viz, tree['edges'])
         pass
     else:
         print("something went wrong, unknown dropdown value")  # TODO error message?
+
+    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
 
 
 def create_figure(df, df_edges, df_populations):
@@ -138,9 +164,10 @@ def create_figure(df, df_edges, df_populations):
                 lines_to.append([source.data[y.value][df_edges.iloc[line, 1] - 1],  # TODO filter possible nan values
                                  source.data[y.value][df_edges.iloc[line, 2] - 1]])
 
-            lines_renderer = p.multi_line(lines_from, lines_to, line_width=0.5, color='white')
-        else:
-            lines_renderer = None
+            p.multi_line(lines_from, lines_to, line_width=0.5, color='white')
+            # lines_renderer = p.multi_line(lines_from, lines_to, line_width=0.5, color='white')
+        # else:
+            # lines_renderer = None
 
         # mark populations
         line_color = ['white'] * len(df)
