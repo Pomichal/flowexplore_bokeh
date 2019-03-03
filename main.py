@@ -303,29 +303,30 @@ def load_test_data():
     global df_viz
     global source
 
-    patient_data = pd.read_csv(join(dirname(__file__), 'data/patient_1.csv'))
-    patient_data2 = pd.read_csv(join(dirname(__file__), 'data/patient_2.csv'))
-    coordinates = pd.read_csv(join(dirname(__file__), 'data/test_coordinates.csv'))
-    edges = pd.read_csv(join(dirname(__file__), 'data/test_edges.csv'))
+    patient_data = pd.read_csv(join(dirname(__file__), 'data/patient_36.csv'))
+    patient_data2 = pd.read_csv(join(dirname(__file__), 'data/patient_38.csv'))
+    coordinates = pd.read_csv(join(dirname(__file__), 'data/coordinates.csv'))
+    edges = pd.read_csv(join(dirname(__file__), 'data/edges.csv'))
 
     tree['coordinates'] = coordinates
-    tree_dropdown.menu[0] = ("coordinates ok ( X )", 'coordinates')
+    tree_dropdown.menu[0] = ("coordinates ok (coordinates.csv)", 'coordinates')
     df_viz['x'] = tree['coordinates'].iloc[:, 1].values
     df_viz['y'] = tree['coordinates'].iloc[:, 2].values
     df_viz['populationID'] = -1
     source.data = df_viz.to_dict(orient='list')
 
     tree['edges'] = edges
-    tree_dropdown.menu[1] = ("edges ok + filename + )", 'edges')
+    tree_dropdown.menu[1] = ("edges ok (edges.csv)", 'edges')
+    tree_dropdown.button_type = 'success'
 
-    ind = "1"
+    ind = "36"
     if 'Unnamed: 0' in patient_data.columns:
         patient_data.drop(columns=['Unnamed: 0'], inplace=True)
     patients_data[ind] = patient_data
     patient.options = patient.options + [ind]
     # patient.value = ind/
 
-    ind = "2"
+    ind = "38"
     if 'Unnamed: 0' in patient_data2.columns:
         patient_data2.drop(columns=['Unnamed: 0'], inplace=True)
     patients_data[ind] = patient_data2
@@ -369,11 +370,6 @@ def add_to_bubble(attr, old, new):
 def select_patient(attr, old, new):
     global df_viz
     global source
-    # if old != 'None':
-    # print(patients_data[old])
-    # old_data = source.to_df()
-    # patients_data[old] = old_data[old_data.columns.difference(['lc', 'lw', 'sz', 'x', 'y', 'populationID'])]
-    # print(patients_data[old])
     if patient.value != 'None':
         if df_viz.empty:
             df_viz = patients_data[patient.value]
@@ -470,7 +466,7 @@ bubble_select = Button(label='select the whole population', button_type="primary
 bubble_select.on_click(select_population)
 
 # add selected to a population
-pop_list = Dropdown(label='add selected to the bubble',  menu=[('None', 'None')])
+pop_list = Dropdown(label='add selected to a bubble',  menu=[('None', 'None')])
 pop_list.on_change('value', add_to_bubble)
 
 # TODO selected on change callback
@@ -481,22 +477,23 @@ pop_list.on_change('value', add_to_bubble)
 
 
 # download data new coordinates
-download = Button(label="download", button_type="primary")
+download = Button(label="download tree structure", button_type="primary")
 
 # download the populations
-download_populations = Button(label="download population", button_type="primary")
+download_populations = Button(label="download population list", button_type="primary")
 
 controls = widgetbox([test_data, tree_dropdown, pat_dropdown, patient, x, y, color, size], width=200)
 
-bubble_tools = widgetbox([bubble_name, bubble, bubble_select, pop_list], width=200)
+add_bubble_box = widgetbox([bubble_name, bubble], width=200, css_classes=['bubbles'])
+bubble_tools_box = widgetbox([bubble_select, pop_list], width=200, css_classes=['bubbles2'])
 
-download_tools = widgetbox([download, download_populations], width=200)
+download_tools_box = widgetbox([download, download_populations], width=200)
 
 # data table
 formatter = NumberFormatter(format='0.0000')
 data_table = DataTable(source=source, columns=[], width=400, height=850, reorderable=True)
 
-layout = row(column(controls, bubble_tools, download_tools),
+layout = row(column(controls, add_bubble_box, bubble_tools_box, download_tools_box),
              create_figure(df_viz, tree['edges'], populations),
              data_table)
 
@@ -504,16 +501,16 @@ tab1 = Panel(child=layout, title="population view")
 
 # TAB2 group selection ----------------------------------------------------------------------- TAB2 group selection
 
-create_bubble_stats = Button(label="Create bubble stats", width=200)
+create_bubble_stats = Button(label="under development", width=200)
 create_bubble_stats.on_click(create_stats_tables)
 
 tab2 = Panel(child=create_bubble_stats, title="group selection view")
 
 # TAB3 test results ------------------------------------------------------------------------ TAB3 test results
 
-c = Button(label="wewe")
+c = Button(label="under development")
 
-tab3 = Panel(child=c, title="test results view")
+tab3 = Panel(child=c, title="statistics view")
 
 # FINAL LAYOUT ------------------------------------------------------------------------------------- FINAL LAYOUT
 
