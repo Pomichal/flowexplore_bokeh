@@ -16,6 +16,11 @@ import base64
 
 import help_functions as hf
 
+# import pyreadr
+
+# import sentry_sdk
+# sentry_sdk.init("https://bc8203f867b04d5ca4e9129f144a192f@sentry.io/1406934")
+
 file_source_tree = ColumnDataSource({'file_contents': [], 'file_name': []})
 
 file_source_pat = ColumnDataSource({'file_contents': [], 'file_name': []})
@@ -97,7 +102,7 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload population dat
         patient.options = patient.options + [ind]
         patient.value = ind
 
-    elif pat_dropdown.value == 'population_data':  # TODO population callback
+    elif pat_dropdown.value == 'population_data':
         text = list(iter(file_io.getvalue().splitlines()))
         df_viz['populationID'] = -1
         populations = pd.DataFrame()
@@ -120,11 +125,6 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload population dat
                 }
                 source.patch(patches)
                 bubble_name.value = ""
-
-        # tree['edges'] = df
-        # tree_dropdown.menu[1] = ("edges ok (" + filename[0] + ")", 'edges')
-        # layout.children[1] = create_figure(df_viz, tree['edges'])
-        pass
     else:
         print("something went wrong, unknown dropdown value")  # TODO error message?
 
@@ -444,12 +444,12 @@ def create_stats_tables():
             print()
 
 
+# TAB1 population view ----------------------------------------------------------------------- TAB1 population view
+
 # file loading and update
 file_source_tree.on_change('data', file_callback_tree)
 
 file_source_pat.on_change('data', file_callback_pat)
-
-# TAB1 population view ----------------------------------------------------------------------- TAB1 population view
 
 # test data loading, only for testing
 test_data = Button(label="test data")
@@ -542,6 +542,5 @@ tab3 = Panel(child=c, title="statistics view")
 # FINAL LAYOUT ------------------------------------------------------------------------------------- FINAL LAYOUT
 
 tabs = Tabs(tabs=[tab1, tab2, tab3])
-
 curdoc().add_root(tabs)
 curdoc().title = "Flowexplore"
