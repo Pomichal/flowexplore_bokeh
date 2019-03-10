@@ -25,7 +25,7 @@ file_source_tree = ColumnDataSource({'file_contents': [], 'file_name': []})
 
 file_source_populations = ColumnDataSource({'file_contents': [], 'file_name': []})
 
-files_patients = ColumnDataSource({'file_list': []})
+file_source_patient = ColumnDataSource({'file_contents': [], 'file_name': []})
 
 patients_data = {}
 
@@ -116,13 +116,33 @@ def file_callback_populations(attr, old, new):
             source.patch(patches)
             bubble_name.value = ""
 
+    upload_populations.button_type = 'success'
     layout.children[1] = create_figure(df_viz, tree['edges'], populations)
 
 
 def file_callback_pat(attr, old, new):  # TODO file check, upload population data
-    print(files_patients.data['file_list'])
-    print("hehehehehehehehehehehe")
-    pass
+    global df_viz
+    global source
+    global populations
+
+    filename = file_source_patient.data['file_name'][-1]
+    print(file_source_patient.data['file_name'])
+    raw_contents = file_source_patient.data['file_contents'][-1]
+
+    # remove the prefix that JS adds
+    prefix, b64_contents = raw_contents.split(",", 1)
+    file_contents = base64.b64decode(b64_contents)
+    file_io = StringIO(bytes.decode(file_contents))
+    # print("file contents:")
+    # print(df)
+    df = pd.read_csv(file_io)
+    ind = filename.split("_")[-1].split(".")[0]
+    if 'Unnamed: 0' in df.columns:  # TODO drop all Unnamed
+        df.drop(columns=['Unnamed: 0'], inplace=True)
+    patients_data[ind] = df
+    patient.options = patient.options + [ind]
+    patient.value = ind
+    upload_patients.button_type = 'success'
 
 
 def create_figure(df, df_edges, df_populations):
@@ -445,7 +465,7 @@ file_source_tree.on_change('data', file_callback_tree)
 
 file_source_populations.on_change('data', file_callback_populations)
 
-files_patients.on_change('data', file_callback_pat)
+file_source_patient.on_change('data', file_callback_pat)
 
 # test data loading, only for testing
 test_data = Button(label="test data")
@@ -459,7 +479,7 @@ tree_dropdown.callback = CustomJS(args=dict(file_source=file_source_tree),
 
 # upload patients data
 upload_patients = Button(label="upload patients data")
-upload_patients.js_on_click(CustomJS(args=dict(files=files_patients),
+upload_patients.js_on_click(CustomJS(args=dict(file_source=file_source_patient),
                                      code=open(join(dirname(__file__), "static/js/upload_multiple.js")).read()))
 
 # upload population list
