@@ -23,7 +23,9 @@ import help_functions as hf
 
 file_source_tree = ColumnDataSource({'file_contents': [], 'file_name': []})
 
-file_source_pat = ColumnDataSource({'file_contents': [], 'file_name': []})
+file_source_populations = ColumnDataSource({'file_contents': [], 'file_name': []})
+
+files_patients = ColumnDataSource({'file_list': []})
 
 patients_data = {}
 
@@ -79,13 +81,51 @@ def file_callback_tree(attr, old, new):  # TODO file check
         tree_dropdown.button_type = "success"
 
 
+def file_callback_populations(attr, old, new):
+    global df_viz
+    global populations
+
+    filename = file_source_populations.data['file_name'][0]
+    raw_contents = file_source_populations.data['file_contents'][0]
+
+    # remove the prefix that JS adds
+    prefix, b64_contents = raw_contents.split(",", 1)
+    file_contents = base64.b64decode(b64_contents)
+    file_io = StringIO(bytes.decode(file_contents))
+
+    text = list(iter(file_io.getvalue().splitlines()))
+    df_viz['populationID'] = -1
+    populations = pd.DataFrame()
+    for line in text:
+        if line != "":
+            split_line = line.split(":")
+            pop_name = split_line[0]
+
+            populations = populations.append({'population_name': pop_name,
+                                              'color': population_colors.loc[len(populations), 'color_name']},
+                                             ignore_index=True)
+            pop_list.menu.append((pop_name, str(len(populations) - 1)))
+
+            indices = [int(a) for a in split_line[1].split(",")]
+            # print(indices)
+
+            df_viz.loc[indices, 'populationID'] = len(populations) - 1
+            patches = {
+                'populationID': [(i, len(populations) - 1) for i in indices]
+            }
+            source.patch(patches)
+            bubble_name.value = ""
+
+    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+
+
 def file_callback_pat(attr, old, new):  # TODO file check, upload population data
     global df_viz
     global source
     global populations
 
-    filename = file_source_pat.data['file_name'][0]
-    raw_contents = file_source_pat.data['file_contents'][0]
+    filename = file_source_populations.data['file_name'][0]
+    raw_contents = file_source_populations.data['file_contents'][0]
 
     # remove the prefix that JS adds
     prefix, b64_contents = raw_contents.split(",", 1)
@@ -449,7 +489,7 @@ def create_stats_tables():
 # file loading and update
 file_source_tree.on_change('data', file_callback_tree)
 
-file_source_pat.on_change('data', file_callback_pat)
+file_source_populations.on_change('data', file_callback_populations)
 
 # test data loading, only for testing
 test_data = Button(label="test data")
@@ -464,8 +504,12 @@ tree_dropdown.callback = CustomJS(args=dict(file_source=file_source_tree),
 # upload patient and population data
 menu_pat = [("Add patient data", "patient_data"), ("Upload population data", "population_data")]
 pat_dropdown = Dropdown(label="Upload patient data", button_type="warning", menu=menu_pat)
-pat_dropdown.callback = CustomJS(args=dict(file_source=file_source_pat),
-                                 code=open(join(dirname(__file__), "static/js/upload.js")).read())
+pat_dropdown.callback = CustomJS(args=dict(files=files_patients),
+                                 code=open(join(dirname(__file__), "static/js/upload_multiple.js")).read())
+
+upload_populations = Button(label="upload population list")
+upload_populations.js_on_click(CustomJS(args=dict(file_source=file_source_populations),
+                                        code=open(join(dirname(__file__), "static/js/upload.js")).read()))
 
 # select patient
 patient = Select(title='Patient', value='None', options=['None'] + df_viz.columns.tolist())
@@ -509,7 +553,8 @@ download = Button(label="download tree structure", button_type="primary")
 # download the populations
 download_populations = Button(label="download population list", button_type="primary")
 
-controls = widgetbox([test_data, tree_dropdown, pat_dropdown, patient, x, y, color, size], width=200)
+controls = widgetbox([test_data, tree_dropdown, pat_dropdown, upload_populations,
+                      patient, x, y, color, size], width=200)
 
 add_bubble_box = widgetbox([bubble_name, bubble], width=200, css_classes=['bubbles'])
 bubble_tools_box = widgetbox([bubble_select, pop_list], width=200, css_classes=['bubbles2'])
