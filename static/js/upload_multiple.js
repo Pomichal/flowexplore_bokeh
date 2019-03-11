@@ -32,8 +32,8 @@ input.onchange = function(){
         for(let i=0; i < input.files.length; i++) {
             read_file(input.files[i]);
         }
-        console.log(counter);
-        alert('upload finished');
+        console.log(counter);   // TODO upload finished message
+        // alert('upload finished');
     } else {
         alert('FileReader is not supported in this browser');
     }

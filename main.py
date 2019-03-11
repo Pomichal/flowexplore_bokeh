@@ -81,11 +81,10 @@ def file_callback_tree(attr, old, new):  # TODO file check
         tree_dropdown.button_type = "success"
 
 
-def file_callback_populations(attr, old, new):
+def file_callback_populations(attr, old, new):      # TODO file check
     global df_viz
     global populations
 
-    filename = file_source_populations.data['file_name'][0]
     raw_contents = file_source_populations.data['file_contents'][0]
 
     # remove the prefix that JS adds
@@ -126,7 +125,6 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload population dat
     global populations
 
     filename = file_source_patient.data['file_name'][-1]
-    print(file_source_patient.data['file_name'])
     raw_contents = file_source_patient.data['file_contents'][-1]
 
     # remove the prefix that JS adds
@@ -136,7 +134,8 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload population dat
     # print("file contents:")
     # print(df)
     df = pd.read_csv(file_io)
-    ind = filename.split("_")[-1].split(".")[0]
+    # print(filename.split(".")[0])
+    ind = filename.split(".")[0]
     if 'Unnamed: 0' in df.columns:  # TODO drop all Unnamed
         df.drop(columns=['Unnamed: 0'], inplace=True)
     patients_data[ind] = df
@@ -196,10 +195,10 @@ def create_figure(df, df_edges, df_populations):
 
         if size.value != 'None':
             sizes = [hf.scale(value, df[size.value].min(),
-                              df[size.value].max()) if not np.isnan(value) and value != 0 else 7 for value in
+                              df[size.value].max()) if not np.isnan(value) and value != 0 else 10 for value in
                      df[size.value]]
         else:
-            sizes = [15 for _ in df[x.value]]
+            sizes = [25 for _ in df[x.value]]
         source.add(sizes, name='sz')
 
         if color.value != 'None':
@@ -406,6 +405,7 @@ def add_to_bubble(attr, old, new):
         df_viz.loc[indices, 'populationID'] = -1
 
     layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+    pop_list.value = 'placeholder'      # TODO find final solution
 
 
 def select_patient(attr, old, new):
@@ -468,8 +468,8 @@ file_source_populations.on_change('data', file_callback_populations)
 file_source_patient.on_change('data', file_callback_pat)
 
 # test data loading, only for testing
-test_data = Button(label="test data")
-test_data.on_click(load_test_data)
+# test_data = Button(label="test data")
+# test_data.on_click(load_test_data)
 
 # upload tree files
 menu_tree = [("Upload cluster coordinates", "coordinates"), ("Upload graph edges", "edges")]
@@ -518,10 +518,10 @@ pop_list.on_change('value', add_to_bubble)
 
 # TODO selected on change callback
 # source.selected.js_on_change('indices', CustomJS(args=dict(source=source, button=bubble_select), code="""
-#                             button.disabled = true;
+#                             console.log('aaaa');
+#                             // button.disabled = true;
 #                             """)
 #                              )
-
 
 # download data new coordinates
 download = Button(label="download tree structure", button_type="primary")
@@ -529,7 +529,8 @@ download = Button(label="download tree structure", button_type="primary")
 # download the populations
 download_populations = Button(label="download population list", button_type="primary")
 
-controls = widgetbox([test_data, tree_dropdown, upload_patients, upload_populations,
+# controls = widgetbox([test_data, tree_dropdown, upload_patients, upload_populations,
+controls = widgetbox([tree_dropdown, upload_patients, upload_populations,
                       patient, x, y, color, size], width=200)
 
 add_bubble_box = widgetbox([bubble_name, bubble], width=200, css_classes=['bubbles'])
