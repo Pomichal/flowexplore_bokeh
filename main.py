@@ -387,14 +387,9 @@ def load_test_data():
 
 
 def select_population():
-    indices = source.selected.indices
-    if len(indices) == 1:
-        population = source.data["pop_names"][indices[0]]
-        new_indices = [i for i, g in enumerate(source.data["pop_names"]) if g == population]
-        if new_indices != indices:
-            source.selected = Selection(indices=new_indices)
-    else:
-        print("WARNING: SELECT ONLY ONE NODE")  # TODO create warning message in UI!
+    population = source.data["pop_names"][source.selected.indices[0]]
+    new_indices = [i for i, g in enumerate(source.data["pop_names"]) if g == population]
+    source.selected.indices = new_indices
 
 
 def add_to_bubble(attr, old, new):
@@ -446,6 +441,15 @@ def select_patient(attr, old, new):
             drop_cols = map(lambda a: a if a not in ['x', 'y', 'populationID'] else None, df_viz.columns.tolist())
             df_viz.drop(columns=filter(lambda v: v is not None, drop_cols), inplace=True)
     layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+
+
+def check_selection(attr, old, new):
+
+    IDs = set(list(source.data['populationID'][k] for k in source.selected.indices))
+    if len(IDs) == 1:
+        bubble_select.disabled = False
+    else:
+        bubble_select.disabled = True
 
 
 def create_stats_tables():
@@ -509,7 +513,7 @@ bubble = Button(label="Create bubble")
 bubble.on_click(create_bubble)
 
 # select population
-bubble_select = Button(label='select the whole population', button_type="primary")
+bubble_select = Button(label='select the whole population', button_type="primary", disabled=True)
 bubble_select.on_click(select_population)
 
 # add selected to a population
@@ -522,6 +526,8 @@ pop_list.on_change('value', add_to_bubble)
 #                             // button.disabled = true;
 #                             """)
 #                              )
+
+source.selected.on_change('indices', check_selection)
 
 # download data new coordinates
 download = Button(label="download tree structure", button_type="primary")
