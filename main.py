@@ -81,7 +81,7 @@ def file_callback_tree(attr, old, new):  # TODO file check
         tree_dropdown.button_type = "success"
 
 
-def file_callback_populations(attr, old, new):      # TODO file check
+def file_callback_populations(attr, old, new):  # TODO file check
     global df_viz
     global populations
 
@@ -180,7 +180,7 @@ def create_figure(df, df_edges, df_populations):
             p.multi_line(lines_from, lines_to, line_width=0.5, color='white')
             # lines_renderer = p.multi_line(lines_from, lines_to, line_width=0.5, color='white')
         # else:
-            # lines_renderer = None
+        # lines_renderer = None
 
         # mark populations
         line_color = ['white'] * len(df)
@@ -240,7 +240,8 @@ def create_figure(df, df_edges, df_populations):
 
         p.add_tools(hover)
         draw_tool = PointDrawTool(renderers=[renderer], add=False)
-        # draw_tool = PointDrawTool(renderers=[renderer], add=False)
+        # callback = CustomJS(code="console.log('tap event occurred')")
+        # p.js_on_event('lodend', callback)
         p.add_tools(draw_tool)
         p.toolbar.active_tap = draw_tool
 
@@ -400,7 +401,7 @@ def add_to_bubble(attr, old, new):
         df_viz.loc[indices, 'populationID'] = -1
 
     layout.children[1] = create_figure(df_viz, tree['edges'], populations)
-    pop_list.value = 'placeholder'      # TODO find final solution
+    pop_list.value = 'placeholder'  # TODO find final solution
 
 
 def select_patient(attr, old, new):
@@ -444,7 +445,6 @@ def select_patient(attr, old, new):
 
 
 def check_selection(attr, old, new):
-
     IDs = set(list(source.data['populationID'][k] for k in source.selected.indices))
     if len(IDs) == 1:
         bubble_select.disabled = False
@@ -454,12 +454,21 @@ def check_selection(attr, old, new):
 
 def create_stats_tables():
     for pat in patients_data:
-        count = patients_data[pat].iloc[:, 1].values
+        # select column with cell count
+        cols_with_int = patients_data[pat].loc[:, patients_data[pat].dtypes == np.int64]
+        # TODO better condition to filter columns
+        print(list(filter(lambda a: (not "id" in a.lower()) and patients_data[pat][a].nunique() > 2,
+                          patients_data[pat].loc[:, patients_data[pat].dtypes == np.int64].columns)))
+        # count = patients_data[pat].iloc[:, 1].values
 
-        for pop in range(len(populations)):
-            # clusters = patients_data[pat][patients_data[pat]['populationID'] == pop]
-            print(patients_data[pat])
-            print()
+        # for pop in range(len(populations)):
+        # clusters = patients_data[pat][patients_data[pat]['populationID'] == pop]
+        # print(patients_data[pat].dtypes)
+        # print()
+
+
+def hold(attr, old, new):  # TODO add callback after pointDrawTool action
+    print("eeee")
 
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view
@@ -516,18 +525,12 @@ bubble.on_click(create_bubble)
 bubble_select = Button(label='select the whole population', button_type="primary", disabled=True)
 bubble_select.on_click(select_population)
 
-# add selected to a population
-pop_list = Dropdown(label='add selected to a bubble',  menu=[('None', 'None')])
-pop_list.on_change('value', add_to_bubble)
-
-# TODO selected on change callback
-# source.selected.js_on_change('indices', CustomJS(args=dict(source=source, button=bubble_select), code="""
-#                             console.log('aaaa');
-#                             // button.disabled = true;
-#                             """)
-#                              )
-
+# if selection change, check bubble_select button
 source.selected.on_change('indices', check_selection)
+
+# add selected to a population
+pop_list = Dropdown(label='add selected to a bubble', menu=[('None', 'None')])
+pop_list.on_change('value', add_to_bubble)
 
 # download data new coordinates
 download = Button(label="download tree structure", button_type="primary")
