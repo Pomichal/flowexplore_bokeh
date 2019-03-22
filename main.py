@@ -10,13 +10,11 @@ from bokeh.models.graphs import NodesAndLinkedEdges
 from bokeh.models.selections import Selection
 from bokeh.plotting import curdoc, figure
 from functools import reduce
-
+from math import pi
 from io import StringIO
 import base64
 
 import help_functions as hf
-
-# import pyreadr
 
 # import sentry_sdk
 # sentry_sdk.init("https://bc8203f867b04d5ca4e9129f144a192f@sentry.io/1406934")
@@ -455,6 +453,7 @@ def check_selection(attr, old, new):
 
 
 def create_stats_tables():
+    global df_stats
     # create empty dataframe with multiindex
     bubbles = populations['population_name'].values
     markers = reduce(lambda s, q: s | q, map(lambda p: set(patients_data[p].columns.values), patients_data.keys()))
@@ -462,9 +461,11 @@ def create_stats_tables():
 
     df_stats = pd.DataFrame(index=pd.MultiIndex.from_product(iterables), columns=patients_data.keys())
     # print(df_stats)
+    marker.options = ['None'] + list(markers)
 
     for pat in patients_data:
         df_patient = patients_data[pat]
+
         # select column with cell count
         # TODO better condition to filter columns and find cell count
         int_cols = list(filter(lambda a: (not "id" in a.lower()) and df_patient[a].nunique() > 2,
@@ -480,26 +481,38 @@ def create_stats_tables():
                 clusters = df_patient[df_viz['populationID'] == idx_b]
                 for idx_m, m in enumerate(markers):
                     if m != cell_count_column and m in clusters.columns:
-                        # print(clusters[m].index) if m in clusters.columns.values else print("nope")
-                        # map(lambda a: print(a), clusters[m].values) if m in clusters.columns.values else print("nope")
-                        # print(list(map(lambda a: print(a), clusters[m])))
-                        # print(df_stats.loc[(b, m), pat])
                         values = map(lambda a, count: a*clusters.loc[count, cell_count_column],
                                      clusters[m].dropna(), clusters[m].index.values)
-                        # print(m, reduce(lambda p, q: p + q, list(values), 0))
                         df_stats.loc[(b, m), pat] = reduce(lambda p, q: p + q, list(values), 0) / cell_sum
-                        # print(m, list(reduce(lambda p, q: p + q, map(lambda a, count: a*clusters.loc[count,
-                        #                                                                              cell_count_column],
-                        #                                              clusters[m].dropna(),clusters[m].index.values))))
-    print(df_stats)
+    df_stats = df_stats.astype(float)
+    # print(df_stats)
 
 
-        # count = patients_data[pat].iloc[:, 1].values
+def correlation_plot():
+    if marker.value != "None":
+        p = figure(plot_height=800, plot_width=800,
+                   tools='pan, box_zoom,reset, wheel_zoom',
+                   toolbar_location="above")
 
-        # for pop in range(len(populations)):
-        # clusters = patients_data[pat][patients_data[pat]['populationID'] == pop]
-        # print(patients_data[pat].dtypes)
-        # print()
+        p.grid.grid_line_color = None
+        p.axis.axis_line_color = None
+        p.axis.major_tick_line_color = None
+        p.axis.major_label_text_font_size = "5pt"
+        p.axis.major_label_standoff = 0
+        p.xaxis.major_label_orientation = pi / 3
+
+        df = df_stats.xs(marker.value, level=1, drop_level=True).reset_index(drop=True)
+        print(df.dtypes)
+        print(df.corr())
+    else:
+        p = figure(plot_height=800, plot_width=800,
+                   tools='pan, box_zoom, reset, wheel_zoom',
+                   toolbar_location="above")
+    return p
+
+
+def update_correlation_plot(attr, old, new):
+    layout2.children[1] = correlation_plot()
 
 
 def hold(attr, old, new):  # TODO add callback after pointDrawTool action
@@ -594,10 +607,16 @@ tab1 = Panel(child=layout, title="population view")
 
 # TAB2 group selection ----------------------------------------------------------------------- TAB2 group selection
 
-create_bubble_stats = Button(label="under development", width=200)
+create_bubble_stats = Button(label="create tables for statistics")
 create_bubble_stats.on_click(create_stats_tables)
+marker = Select(title='Marker', value='None', options=['None'])
+marker.on_change('value', update_correlation_plot)
 
-tab2 = Panel(child=create_bubble_stats, title="group selection view")
+basic_overview = widgetbox([create_bubble_stats, marker], width=200)
+
+layout2 = row(basic_overview, correlation_plot())
+
+tab2 = Panel(child=layout2, title="group selection view")
 
 # TAB3 test results ------------------------------------------------------------------------ TAB3 test results
 
