@@ -455,26 +455,45 @@ def check_selection(attr, old, new):
 
 
 def create_stats_tables():
-    # print(populations['population_name'].values)
-    # print(df_viz['populationID'])
-    # print(list(reduce(lambda s, q: s | q, map(lambda p: set(patients_data[p].columns.values), patients_data.keys()))))
+    # create empty dataframe with multiindex
     bubbles = populations['population_name'].values
     markers = reduce(lambda s, q: s | q, map(lambda p: set(patients_data[p].columns.values), patients_data.keys()))
     iterables = [bubbles, markers]
-    df_stats = pd.DataFrame(index=pd.MultiIndex.from_product(iterables))
-    print(df_stats)
-    # for pat in patients_data:
+
+    df_stats = pd.DataFrame(index=pd.MultiIndex.from_product(iterables), columns=patients_data.keys())
+    # print(df_stats)
+
+    for pat in patients_data:
+        df_patient = patients_data[pat]
         # select column with cell count
         # TODO better condition to filter columns and find cell count
-        # int_cols = list(filter(lambda a: (not "id" in a.lower()) and patients_data[pat][a].nunique() > 2,
-        #                        patients_data[pat].loc[:, patients_data[pat].dtypes == np.int64].columns))
+        int_cols = list(filter(lambda a: (not "id" in a.lower()) and df_patient[a].nunique() > 2,
+                               df_patient.loc[:, df_patient.dtypes == np.int64].columns))
         # print(pat, int_cols)
-        # cells = int_cols[0]
-        # if len(int_cols) > 1:
-        #     print("ERROR")      # TODO error message
-        # else:
-        #     cell_count = int_cols[0]
-        #     print(cell_count)
+        if len(int_cols) > 1:
+            print("ERROR")      # TODO error message
+        else:
+            cell_count_column = int_cols[0]
+            cell_sum = df_patient[cell_count_column].sum()
+            # print(cell_sum)
+            for idx_b, b in enumerate(bubbles):
+                clusters = df_patient[df_viz['populationID'] == idx_b]
+                for idx_m, m in enumerate(markers):
+                    if m != cell_count_column and m in clusters.columns:
+                        # print(clusters[m].index) if m in clusters.columns.values else print("nope")
+                        # map(lambda a: print(a), clusters[m].values) if m in clusters.columns.values else print("nope")
+                        # print(list(map(lambda a: print(a), clusters[m])))
+                        # print(df_stats.loc[(b, m), pat])
+                        values = map(lambda a, count: a*clusters.loc[count, cell_count_column],
+                                     clusters[m].dropna(), clusters[m].index.values)
+                        # print(m, reduce(lambda p, q: p + q, list(values), 0))
+                        df_stats.loc[(b, m), pat] = reduce(lambda p, q: p + q, list(values), 0) / cell_sum
+                        # print(m, list(reduce(lambda p, q: p + q, map(lambda a, count: a*clusters.loc[count,
+                        #                                                                              cell_count_column],
+                        #                                              clusters[m].dropna(),clusters[m].index.values))))
+    print(df_stats)
+
+
         # count = patients_data[pat].iloc[:, 1].values
 
         # for pop in range(len(populations)):
