@@ -484,26 +484,46 @@ def create_stats_tables():
                         values = map(lambda a, count: a*clusters.loc[count, cell_count_column],
                                      clusters[m].dropna(), clusters[m].index.values)
                         df_stats.loc[(b, m), pat] = reduce(lambda p, q: p + q, list(values), 0) / cell_sum
+                    else:
+                        df_stats.loc[(b, m), pat] = reduce(lambda p, q: p + q, clusters[cell_count_column].values)
     df_stats = df_stats.astype(float)
     # print(df_stats)
 
 
 def correlation_plot():
     if marker.value != "None":
-        p = figure(plot_height=800, plot_width=800,
+        patients_list = list(patients_data.keys())
+
+        p = figure(title="correlation on marker " + str(marker.value),
+                   x_range=patients_list, y_range=patients_list,
+                   plot_width=800, plot_height=800,
                    tools='pan, box_zoom,reset, wheel_zoom',
-                   toolbar_location="above")
+                   tooltips=[('rate', '@rate%')])
 
         p.grid.grid_line_color = None
         p.axis.axis_line_color = None
         p.axis.major_tick_line_color = None
-        p.axis.major_label_text_font_size = "5pt"
+        p.axis.major_label_text_font_size = "10pt"
         p.axis.major_label_standoff = 0
         p.xaxis.major_label_orientation = pi / 3
 
-        df = df_stats.xs(marker.value, level=1, drop_level=True).reset_index(drop=True)
-        print(df.dtypes)
-        print(df.corr())
+        df = df_stats.xs(marker.value, level=1, drop_level=True).reset_index(drop=True)     # TODO all clusters, without preprocessing
+        # print(pd.DataFrame(df.corr().stack(), columns=['rate']).reset_index())
+        df = pd.DataFrame(df.corr().stack(), columns=['rate']).reset_index()
+
+        mapper = LinearColorMapper(palette=hf.create_color_map(),
+                                   high=df['rate'].max(),
+                                   high_color='red',
+                                   low=df['rate'].min(),
+                                   low_color='blue'
+                                   )
+        color_bar = ColorBar(color_mapper=mapper, location=(0, 0))
+
+        p.rect(x="level_0", y="level_1", width=1, height=1,
+               source=df,
+               fill_color={'field': 'rate', 'transform': mapper},
+               line_color=None)
+        p.add_layout(color_bar, 'right')
     else:
         p = figure(plot_height=800, plot_width=800,
                    tools='pan, box_zoom, reset, wheel_zoom',
