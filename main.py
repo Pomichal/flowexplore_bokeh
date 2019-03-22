@@ -33,7 +33,7 @@ tree = {'coordinates': pd.DataFrame(), 'edges': pd.DataFrame()}
 
 df_viz = pd.DataFrame()
 
-populations = pd.DataFrame()
+populations = pd.DataFrame(columns=['population_name','color'])
 
 source = ColumnDataSource()
 
@@ -427,9 +427,11 @@ def select_patient(attr, old, new):
             # print(df_viz)
             source.data = df_viz.to_dict(orient='list')
             x.options = df_viz.columns.tolist()
-            x.value = 'x' if 'x' in df_viz.columns.tolist() else df_viz.columns.tolist()[0]
+            x.value = 'x' if 'x' in df_viz.columns.tolist() else \
+                (df_viz.columns.tolist()[0] if 'ID' not in df_viz.columns.tolist()[0] else df_viz.columns.tolist()[1])
             y.options = df_viz.columns.tolist()
-            y.value = 'y' if 'y' in df_viz.columns.tolist() else df_viz.columns.tolist()[1]
+            y.value = 'y' if 'y' in df_viz.columns.tolist() else \
+                (df_viz.columns.tolist()[1] if 'ID' not in df_viz.columns.tolist()[1] else df_viz.columns.tolist()[2])
             color.options = ['None'] + df_viz.columns.tolist()
             color.value = 'None'
             size.options = ['None'] + df_viz.columns.tolist()
@@ -453,12 +455,26 @@ def check_selection(attr, old, new):
 
 
 def create_stats_tables():
-    for pat in patients_data:
+    # print(populations['population_name'].values)
+    # print(df_viz['populationID'])
+    # print(list(reduce(lambda s, q: s | q, map(lambda p: set(patients_data[p].columns.values), patients_data.keys()))))
+    bubbles = populations['population_name'].values
+    markers = reduce(lambda s, q: s | q, map(lambda p: set(patients_data[p].columns.values), patients_data.keys()))
+    iterables = [bubbles, markers]
+    df_stats = pd.DataFrame(index=pd.MultiIndex.from_product(iterables))
+    print(df_stats)
+    # for pat in patients_data:
         # select column with cell count
-        cols_with_int = patients_data[pat].loc[:, patients_data[pat].dtypes == np.int64]
-        # TODO better condition to filter columns
-        print(list(filter(lambda a: (not "id" in a.lower()) and patients_data[pat][a].nunique() > 2,
-                          patients_data[pat].loc[:, patients_data[pat].dtypes == np.int64].columns)))
+        # TODO better condition to filter columns and find cell count
+        # int_cols = list(filter(lambda a: (not "id" in a.lower()) and patients_data[pat][a].nunique() > 2,
+        #                        patients_data[pat].loc[:, patients_data[pat].dtypes == np.int64].columns))
+        # print(pat, int_cols)
+        # cells = int_cols[0]
+        # if len(int_cols) > 1:
+        #     print("ERROR")      # TODO error message
+        # else:
+        #     cell_count = int_cols[0]
+        #     print(cell_count)
         # count = patients_data[pat].iloc[:, 1].values
 
         # for pop in range(len(populations)):
