@@ -505,16 +505,21 @@ def correlation_plot():
         p.axis.major_tick_line_color = None
         p.axis.major_label_text_font_size = "10pt"
         p.axis.major_label_standoff = 0
-        p.xaxis.major_label_orientation = pi / 3
+        p.xaxis.major_label_orientation = pi / 2
 
-        df = df_stats.xs(marker.value, level=1, drop_level=True).reset_index(drop=True)     # TODO all clusters, without preprocessing
-        # print(pd.DataFrame(df.corr().stack(), columns=['rate']).reset_index())
+        df = pd.DataFrame(index=patients_data[patients_list[0]].index.copy())
+
+        for pat in patients_list:
+            df[pat] = patients_data[pat][marker.value] if marker.value in patients_data[pat].columns else np.NaN
+
+        df.columns = patients_list
         df = pd.DataFrame(df.corr().stack(), columns=['rate']).reset_index()
+        # print(df)
 
         mapper = LinearColorMapper(palette=hf.create_color_map(),
-                                   high=df['rate'].max(),
+                                   high=1,
                                    high_color='red',
-                                   low=df['rate'].min(),
+                                   low=-1,
                                    low_color='blue'
                                    )
         color_bar = ColorBar(color_mapper=mapper, location=(0, 0))
