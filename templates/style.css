@@ -33,3 +33,7 @@ body {
 .bubbles2{
     border-bottom: 2px solid white;
 }
+
+.group-btn{
+    margin-top: 10px;
+}

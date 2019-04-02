@@ -9,7 +9,7 @@ from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.graphs import NodesAndLinkedEdges
 from bokeh.models.selections import Selection
 from bokeh.plotting import curdoc, figure
-from functools import reduce
+from functools import reduce, partial
 from math import pi
 from io import StringIO
 import base64
@@ -452,7 +452,7 @@ def check_selection(attr, old, new):
         bubble_select.disabled = True
 
 
-def create_stats_tables():
+def create_stats_tables():          # TODO remove error, if running without coordinates data
     global df_stats
     # create empty dataframe with multiindex
     bubbles = populations['population_name'].values
@@ -540,8 +540,40 @@ def update_correlation_plot(attr, old, new):
     layout2.children[1] = correlation_plot()
 
 
+def add_group():
+    group_number = len(groups_tabs.tabs) + 1
+    groups_tabs.tabs = groups_tabs.tabs + [create_panel(group_number)]
+
+
+def remove_group():
+    print(groups_tabs.active, " ", groups_tabs.tabs)
+    groups_tabs.tabs.pop(groups_tabs.active)
+
+
 def hold(attr, old, new):  # TODO add callback after pointDrawTool action
     print("eeee")
+
+
+def rename_tab(text_input):
+    global groups_tabs
+
+    groups_tabs.tabs[groups_tabs.active].title = text_input.value
+    new_tabs = Tabs(tabs=groups_tabs.tabs, active=groups_tabs.active)
+    groups_tabs = new_tabs
+    layout2.children[2].children[1].children[0] = new_tabs       # TODO time complexity???
+
+
+def create_panel(group_number=1):       # TODO css classes
+    remove_group_button = Button(label='remove group', width=200, button_type="danger")
+    remove_group_button.on_click(remove_group)
+
+    group_name = TextInput(placeholder="rename group")
+    confirm = Button(label="OK", width=200)
+    confirm.on_click(partial(rename_tab, text_input=group_name))
+
+    edit_row = row([remove_group_button, group_name, confirm])
+    new_tab = Panel(child=edit_row, title="group " + str(group_number), closable=True)
+    return new_tab
 
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view
@@ -639,7 +671,13 @@ marker.on_change('value', update_correlation_plot)
 
 basic_overview = widgetbox([create_bubble_stats, marker], width=200)
 
-layout2 = row(basic_overview, correlation_plot())
+add_group_button = Button(label='Add new group', width=200)
+add_group_button.on_click(add_group)
+
+groups_tabs = Tabs(tabs=[create_panel()])
+groups_tabs.width = 800
+
+layout2 = row(basic_overview, correlation_plot(), column(children=[add_group_button, groups_tabs]))
 
 tab2 = Panel(child=layout2, title="group selection view")
 
