@@ -11,7 +11,7 @@ from bokeh.models.selections import Selection
 from bokeh.plotting import curdoc, figure
 from functools import reduce, partial
 from math import pi
-from io import StringIO
+from io import StringIO, BytesIO
 import base64
 
 import help_functions as hf
@@ -25,6 +25,8 @@ file_source_populations = ColumnDataSource({'file_contents': [], 'file_name': []
 
 file_source_patient = ColumnDataSource({'file_contents': [], 'file_name': []})
 
+file_source_clinical = ColumnDataSource({'file_contents': [], 'file_name': []})
+
 patients_data = {}
 
 tree = {'coordinates': pd.DataFrame(), 'edges': pd.DataFrame()}
@@ -36,6 +38,8 @@ populations = pd.DataFrame(columns=['population_name','color'])
 source = ColumnDataSource()
 
 population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))  # TODO add more colors
+
+clinical_data = pd.DataFrame()
 
 
 def file_callback_tree(attr, old, new):  # TODO file check
@@ -140,6 +144,26 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload population dat
     patient.options = patient.options + [ind]
     patient.value = ind
     upload_patients.button_type = 'success'
+
+
+def file_callback_clinical(attr, old, new):  # TODO file check
+    global clinical_data
+
+    filename = file_source_clinical.data['file_name'][0]
+    raw_contents = file_source_clinical.data['file_contents'][0]
+
+    # remove the prefix that JS adds
+    prefix, b64_contents = raw_contents.split(",", 1)
+    # print(b64_contents)
+    file_contents = base64.b64decode(b64_contents)
+    file_io = BytesIO(file_contents)
+    # file_io = StringIO.StringIO(file_contents)
+    # df = pd.read_excel(file_io)
+    # file_io = StringIO(bytes.decode(file_contents))
+    # print(file_io)
+
+    clinical_data = pd.read_excel(file_io, header=[0, 1, 2])
+    print(clinical_data)
 
 
 def create_figure(df, df_edges, df_populations):
@@ -558,6 +582,7 @@ def rename_tab(text_input):
     global groups_tabs
 
     groups_tabs.tabs[groups_tabs.active].title = text_input.value
+    text_input.value = ""
     new_tabs = Tabs(tabs=groups_tabs.tabs, active=groups_tabs.active)
     groups_tabs = new_tabs
     layout2.children[2].children[1].children[0] = new_tabs       # TODO time complexity???
@@ -584,6 +609,8 @@ file_source_tree.on_change('data', file_callback_tree)
 file_source_populations.on_change('data', file_callback_populations)
 
 file_source_patient.on_change('data', file_callback_pat)
+
+file_source_clinical.on_change('data', file_callback_clinical)
 
 # test data loading, only for testing
 # test_data = Button(label="test data")
@@ -674,10 +701,15 @@ basic_overview = widgetbox([create_bubble_stats, marker], width=200)
 add_group_button = Button(label='Add new group', width=200)
 add_group_button.on_click(add_group)
 
+upload_clinical_data = Button(label='upload clinical data', width=200)
+upload_clinical_data.js_on_click(CustomJS(args=dict(file_source=file_source_clinical),
+                                          code=open(join(dirname(__file__), "static/js/upload.js")).read()))
+
 groups_tabs = Tabs(tabs=[create_panel()])
 groups_tabs.width = 800
 
-layout2 = row(basic_overview, correlation_plot(), column(children=[add_group_button, groups_tabs]))
+layout2 = row(basic_overview, correlation_plot(), column(children=[row(add_group_button, upload_clinical_data),
+                                                                   groups_tabs]))
 
 tab2 = Panel(child=layout2, title="group selection view")
 

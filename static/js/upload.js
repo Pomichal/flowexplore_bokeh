@@ -4,6 +4,7 @@ function read_file(filename) {
     reader.onerror = error_handler;
     // readAsDataURL represents the file's data as a base64 encoded string
     reader.readAsDataURL(filename);
+
 }
 
 function load_handler(event) {
@@ -23,6 +24,7 @@ input.setAttribute('type', 'file');
 input.onchange = function(){
     if (window.FileReader) {
         read_file(input.files[0]);
+
     } else {
         alert('FileReader is not supported in this browser');
     }
