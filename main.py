@@ -149,21 +149,23 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload population dat
 def file_callback_clinical(attr, old, new):  # TODO file check
     global clinical_data
 
-    filename = file_source_clinical.data['file_name'][0]
+    # filename = file_source_clinical.data['file_name'][0]
     raw_contents = file_source_clinical.data['file_contents'][0]
 
     # remove the prefix that JS adds
     prefix, b64_contents = raw_contents.split(",", 1)
-    # print(b64_contents)
     file_contents = base64.b64decode(b64_contents)
     file_io = BytesIO(file_contents)
-    # file_io = StringIO.StringIO(file_contents)
-    # df = pd.read_excel(file_io)
-    # file_io = StringIO(bytes.decode(file_contents))
-    # print(file_io)
 
     clinical_data = pd.read_excel(file_io, header=[0, 1, 2])
-    print(clinical_data)
+
+    upload_clinical_data.button_type = 'success'
+    group1.child.children[1].children[0].children[0].options = \
+        ['None'] + clinical_data.columns.get_level_values(0).unique().tolist()
+    add_group_button.disabled = False
+    # options = ['None'] + clinical_data.columns.get_level_values(0).unique().tolist()
+    # print(group1.child.children(1).children(0))
+    # print(clinical_data)
 
 
 def create_figure(df, df_edges, df_populations):
@@ -597,7 +599,16 @@ def create_panel(group_number=1):       # TODO css classes
     confirm.on_click(partial(rename_tab, text_input=group_name))
 
     edit_row = row([remove_group_button, group_name, confirm])
-    new_tab = Panel(child=edit_row, title="group " + str(group_number), closable=True)
+
+    if clinical_data.empty:
+        level_1 = Select(title='category', value='None', options=['None'])
+        level_2 = Select(title='property', value='None', options=['None'])
+    else:
+        level_1 = Select(title='category', value='None',
+                         options=['None'] + clinical_data.columns.get_level_values(0).unique().tolist())
+        level_2 = Select(title='property', value='None', options=['None'])
+
+    new_tab = Panel(child=column(edit_row, row(level_1, level_2)), title="group " + str(group_number), closable=True)
     return new_tab
 
 
@@ -698,14 +709,16 @@ marker.on_change('value', update_correlation_plot)
 
 basic_overview = widgetbox([create_bubble_stats, marker], width=200)
 
-add_group_button = Button(label='Add new group', width=200)
+add_group_button = Button(label='Add new group', width=200, disabled=True)
 add_group_button.on_click(add_group)
 
 upload_clinical_data = Button(label='upload clinical data', width=200)
 upload_clinical_data.js_on_click(CustomJS(args=dict(file_source=file_source_clinical),
                                           code=open(join(dirname(__file__), "static/js/upload.js")).read()))
 
-groups_tabs = Tabs(tabs=[create_panel()])
+group1 = create_panel()
+
+groups_tabs = Tabs(tabs=[group1])
 groups_tabs.width = 800
 
 layout2 = row(basic_overview, correlation_plot(), column(children=[row(add_group_button, upload_clinical_data),
