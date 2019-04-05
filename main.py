@@ -160,8 +160,9 @@ def file_callback_clinical(attr, old, new):  # TODO file check
     clinical_data = pd.read_excel(file_io, header=[0, 1, 2])
 
     upload_clinical_data.button_type = 'success'
-    group1.child.children[1].children[0].children[0].options = \
-        ['None'] + clinical_data.columns.get_level_values(0).unique().tolist()
+    # print(group1)
+    groups_tabs.tabs[0] = create_panel()
+    # group1 = create_panel()
     add_group_button.disabled = False
     # options = ['None'] + clinical_data.columns.get_level_values(0).unique().tolist()
     # print(group1.child.children(1).children(0))
@@ -607,9 +608,17 @@ def create_panel(group_number=1):       # TODO css classes
         level_1 = Select(title='category', value='None',
                          options=['None'] + clinical_data.columns.get_level_values(0).unique().tolist())
         level_2 = Select(title='property', value='None', options=['None'])
+        level_1.on_change('value', partial(select_columns, select=level_2))
 
     new_tab = Panel(child=column(edit_row, row(level_1, level_2)), title="group " + str(group_number), closable=True)
     return new_tab
+
+
+def select_columns(attr, old, new, select):
+    if new != 'None':
+        select.options = clinical_data[new].columns.get_level_values(0).tolist()
+    else:
+        select.options = ['None']
 
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view
