@@ -603,10 +603,8 @@ def create_panel(group_number=1):       # TODO css classes
     edit_box = widgetbox([remove_group_button, group_name, confirm], width=200, css_classes=['full-border'])
 
     if clinical_data.empty:
-        level_1 = Select(title='category', value='None', options=['None'])
-        level_2 = Select(title='property', value='None', options=['None'])
         level_3 = PreText(text='please upload clinical data')
-        new_tab = Panel(child=row(edit_box, column(level_1, level_2, level_3)), title="group " + str(group_number),
+        new_tab = Panel(child=level_3, title="group " + str(group_number),
                         closable=True)
 
     else:
@@ -615,8 +613,9 @@ def create_panel(group_number=1):       # TODO css classes
         level_2 = Select(title='property', value='None', options=['None'])
         # level_3 = Select(title='value', value='None', options=['None'], width=200)
         level_3 = PreText(text='please select an attribute')
+        add_filter = Button(label='add filter')
         level_1.on_change('value', partial(select_columns, select_2=level_2))
-        new_tab = Panel(child=row(edit_box, column(level_1, level_2, level_3)), title="group " + str(group_number),
+        new_tab = Panel(child=row(edit_box, column(level_1, level_2, row(level_3, add_filter))), title="group " + str(group_number),
                         closable=True)
         level_2.on_change('value', partial(select_values, select_1=level_1, new_tab=new_tab))
 
@@ -643,7 +642,7 @@ def select_values(attr, old, new, select_1, new_tab):
                 level_3.options = np.unique(
                     [str(obj) for obj in clinical_data[select_1.value][new].iloc[:, 0].dropna().values]).tolist()
             finally:
-                new_tab.child.children[1].children[2].children[0] = level_3
+                new_tab.child.children[1].children[2].children[0].children[0] = level_3
 
         elif 'datetime' in str(clinical_data[select_1.value][new].values.dtype):       # datetime data
             # print("2    ", clinical_data[select_1.value][new].values.dtype)
@@ -654,7 +653,7 @@ def select_values(attr, old, new, select_1, new_tab):
                                           end=end,
                                           value=(start, end),
                                           step=1, width=200)
-            new_tab.child.children[1].children[2].children[0] = date_slider
+            new_tab.child.children[1].children[2].children[0].children[0] = date_slider
 
         elif 'int' in str(clinical_data[select_1.value][new].values.dtype) or \
                 'float' in str(clinical_data[select_1.value][new].values.dtype):
@@ -662,13 +661,13 @@ def select_values(attr, old, new, select_1, new_tab):
             start = clinical_data[select_1.value][new].min().item()
             end = clinical_data[select_1.value][new].max().item()
             slider = RangeSlider(start=start, end=end, step=0.1, value=(start,end), title=new + " Range", width=200)
-            new_tab.child.children[1].children[2].children[0] = slider
+            new_tab.child.children[1].children[2].children[0].children[0] = slider
 
         else:
             print("Something went wrong, unexpected datatype by clinical data value selecting")   # TODO error message?
 
     else:
-        new_tab.child.children[1].children[2].children[0] = PreText(text='please select an attribute')
+        new_tab.child.children[1].children[2].children[0].children[0] = PreText(text='please select an attribute')
 
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view
