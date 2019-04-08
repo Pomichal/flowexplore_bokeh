@@ -9,7 +9,12 @@ body {
 
 .customTextInput .bk-widget-form-input {
       width: 154px;
-      min-width: 70% !important;
+      /*min-width: 70% !important;*/
+}
+
+.renameGroupTextInput .bk-widget-form-input {
+      width: 50px;
+      /*min-width: 70% !important;*/
 }
 
 .slick-header-column {
@@ -36,4 +41,9 @@ body {
 
 .group-btn{
     margin-top: 10px;
+}
+
+.full-border{
+    border: 1px solid white;
+    margin-top: 5px;
 }
