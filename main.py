@@ -5,12 +5,13 @@ from bokeh.layouts import row, widgetbox, column
 from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, \
     CustomJS, LassoSelectTool, GraphRenderer, StaticLayoutProvider, Circle, MultiLine
 from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn, NumberFormatter, Panel, Tabs, \
-    PreText
+    PreText, DateRangeSlider
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.graphs import NodesAndLinkedEdges
 # from bokeh.models.selections import Selection
 from bokeh.plotting import curdoc, figure
 from functools import reduce, partial
+from datetime import datetime
 from math import pi
 from io import StringIO, BytesIO
 import base64
@@ -633,29 +634,32 @@ def select_columns(attr, old, new, select_2):
 
 def select_values(attr, old, new, select_1, new_tab):
     if new != 'None':
-        if clinical_data[select_1.value][new].values.dtype == 'object':
+        if clinical_data[select_1.value][new].values.dtype == 'object':     # categorical data
             level_3 = Select(title='value', value='None', options=['None'], width=200)
             try:
                 print("1  ", clinical_data[select_1.value][new].values.dtype)
                 level_3.options = np.unique(clinical_data[select_1.value][new].iloc[:, 0].dropna().values).tolist()
-                level_3.width = 200      # TODO multiselect?
+                # level_3.width = 200      # TODO multiselect?
             except TypeError:   # TODO filter non categorical data
                 level_3.options = np.unique(
                     [str(obj) for obj in clinical_data[select_1.value][new].iloc[:, 0].dropna().values]).tolist()
-                level_3.width = 200  # TODO multiselect?
+                # level_3.width = 200  # TODO multiselect?
             finally:
                 new_tab.child.children[1].children[2].children[0] = level_3
-        elif 'datetime' in str(clinical_data[select_1.value][new].values.dtype):
+        elif 'datetime' in str(clinical_data[select_1.value][new].values.dtype):       # datetime data
             print("2    ", clinical_data[select_1.value][new].values.dtype)
-            print(new_tab)
-            print(new_tab.child)
-            print(new_tab.child.children[1])
-            print(new_tab.child.children[1].children[2])
-            print(new_tab.child.children[1].children[2].children)
-            new_test = Button(label='I am here')
-            new_tab.child.children[1].children[2].children[0] = new_test
-        elif clinical_data[select_1.value][new].values.dtype != 'object':
+            start = clinical_data[select_1.value][new].min().dt.date.item()
+            end = clinical_data[select_1.value][new].max().dt.date.item()
+            date_slider = DateRangeSlider(title="Date Range: ",
+                                          start=start,
+                                          end=end,
+                                          value=(start, end),
+                                          step=1)
+            new_tab.child.children[1].children[2].children[0] = date_slider
+        elif clinical_data[select_1.value][new].values.dtype != 'object':       # TODO number values (int, float, ...)
             print(clinical_data[select_1.value][new].values.dtype)
+        else:
+            print("Something went wrong, unexpected datatype by clinical data value selecting")   # TODO error message?
     else:
         new_tab.child.children[1].children[2].children[0] = PreText(text='please select an attribute')
     #     select_3.options = ['None']
