@@ -4,10 +4,11 @@ from os.path import join, dirname
 from bokeh.layouts import row, widgetbox, column
 from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, \
     CustomJS, LassoSelectTool, GraphRenderer, StaticLayoutProvider, Circle, MultiLine
-from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn, NumberFormatter, Panel, Tabs
+from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn, NumberFormatter, Panel, Tabs, \
+    PreText
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.graphs import NodesAndLinkedEdges
-from bokeh.models.selections import Selection
+# from bokeh.models.selections import Selection
 from bokeh.plotting import curdoc, figure
 from functools import reduce, partial
 from math import pi
@@ -604,21 +605,60 @@ def create_panel(group_number=1):       # TODO css classes
     if clinical_data.empty:
         level_1 = Select(title='category', value='None', options=['None'])
         level_2 = Select(title='property', value='None', options=['None'])
+        level_3 = PreText(text='please upload clinical data')
+        new_tab = Panel(child=column(edit_row, row(level_1, level_2, level_3)), title="group " + str(group_number),
+                        closable=True)
+
     else:
         level_1 = Select(title='category', value='None',
                          options=['None'] + clinical_data.columns.get_level_values(0).unique().tolist())
         level_2 = Select(title='property', value='None', options=['None'])
-        level_1.on_change('value', partial(select_columns, select=level_2))
+        # level_3 = Select(title='value', value='None', options=['None'], width=200)
+        level_3 = PreText(text='please select an attribute')
+        level_1.on_change('value', partial(select_columns, select_2=level_2))
+        new_tab = Panel(child=column(edit_row, row(level_1, level_2, level_3)), title="group " + str(group_number),
+                        closable=True)
+        level_2.on_change('value', partial(select_values, select_1=level_1, new_tab=new_tab))
 
-    new_tab = Panel(child=column(edit_row, row(level_1, level_2)), title="group " + str(group_number), closable=True)
     return new_tab
 
 
-def select_columns(attr, old, new, select):
+def select_columns(attr, old, new, select_2):
     if new != 'None':
-        select.options = clinical_data[new].columns.get_level_values(0).tolist()
+        select_2.options = clinical_data[new].columns.get_level_values(0).tolist() + ['None']
+        select_2.value = 'None'
     else:
-        select.options = ['None']
+        select_2.options = ['None']
+
+
+def select_values(attr, old, new, select_1, new_tab):
+    if new != 'None':
+        if clinical_data[select_1.value][new].values.dtype == 'object':
+            level_3 = Select(title='value', value='None', options=['None'], width=200)
+            try:
+                print("1  ", clinical_data[select_1.value][new].values.dtype)
+                level_3.options = np.unique(clinical_data[select_1.value][new].iloc[:, 0].dropna().values).tolist()
+                level_3.width = 200      # TODO multiselect?
+            except TypeError:   # TODO filter non categorical data
+                level_3.options = np.unique(
+                    [str(obj) for obj in clinical_data[select_1.value][new].iloc[:, 0].dropna().values]).tolist()
+                level_3.width = 200  # TODO multiselect?
+            finally:
+                new_tab.child.children[1].children[2].children[0] = level_3
+        elif 'datetime' in str(clinical_data[select_1.value][new].values.dtype):
+            print("2    ", clinical_data[select_1.value][new].values.dtype)
+            print(new_tab)
+            print(new_tab.child)
+            print(new_tab.child.children[1])
+            print(new_tab.child.children[1].children[2])
+            print(new_tab.child.children[1].children[2].children)
+            new_test = Button(label='I am here')
+            new_tab.child.children[1].children[2].children[0] = new_test
+        elif clinical_data[select_1.value][new].values.dtype != 'object':
+            print(clinical_data[select_1.value][new].values.dtype)
+    else:
+        new_tab.child.children[1].children[2].children[0] = PreText(text='please select an attribute')
+    #     select_3.options = ['None']
 
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view
