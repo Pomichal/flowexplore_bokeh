@@ -5,13 +5,12 @@ from bokeh.layouts import row, widgetbox, column
 from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, \
     CustomJS, LassoSelectTool, GraphRenderer, StaticLayoutProvider, Circle, MultiLine
 from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn, NumberFormatter, Panel, Tabs, \
-    PreText, DateRangeSlider
+    PreText, DateRangeSlider, RangeSlider
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.graphs import NodesAndLinkedEdges
 # from bokeh.models.selections import Selection
 from bokeh.plotting import curdoc, figure
 from functools import reduce, partial
-from datetime import datetime
 from math import pi
 from io import StringIO, BytesIO
 import base64
@@ -654,10 +653,15 @@ def select_values(attr, old, new, select_1, new_tab):
                                           start=start,
                                           end=end,
                                           value=(start, end),
-                                          step=1)
+                                          step=1, width=200)
             new_tab.child.children[1].children[2].children[0] = date_slider
-        elif clinical_data[select_1.value][new].values.dtype != 'object':       # TODO number values (int, float, ...)
-            print(clinical_data[select_1.value][new].values.dtype)
+        elif 'int' in str(clinical_data[select_1.value][new].values.dtype) or \
+                'float' in str(clinical_data[select_1.value][new].values.dtype):
+            print("3   ", clinical_data[select_1.value][new].values.dtype)
+            start = clinical_data[select_1.value][new].min().item()
+            end = clinical_data[select_1.value][new].max().item()
+            slider = RangeSlider(start=start, end=end, step=0.1, value=(start,end), title="Range", width=200)
+            new_tab.child.children[1].children[2].children[0] = slider
         else:
             print("Something went wrong, unexpected datatype by clinical data value selecting")   # TODO error message?
     else:
