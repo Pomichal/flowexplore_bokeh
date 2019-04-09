@@ -644,6 +644,7 @@ def select_values(attr, old, new, select_1, new_tab):
                 level_3.options = np.unique(
                     [str(obj) for obj in clinical_data[select_1.value][new].iloc[:, 0].dropna().values]).tolist()
             finally:
+                new_tab.child.children[1].children[2].children[1].children[0].disabled = False
                 new_tab.child.children[1].children[2].children[0].children = [level_3]
 
         elif 'datetime' in str(clinical_data[select_1.value][new].values.dtype):       # datetime data
@@ -656,6 +657,7 @@ def select_values(attr, old, new, select_1, new_tab):
                                           value=(start, end),
                                           step=1, width=200)
             checkbox_group = CheckboxGroup(labels=["invert selection"], active=[])
+            new_tab.child.children[1].children[2].children[1].children[0].disabled = False
             new_tab.child.children[1].children[2].children[0].children = [date_slider, checkbox_group]
 
         elif 'int' in str(clinical_data[select_1.value][new].values.dtype) or \
@@ -665,13 +667,15 @@ def select_values(attr, old, new, select_1, new_tab):
             end = clinical_data[select_1.value][new].max().item()
             slider = RangeSlider(start=start, end=end, step=0.1, value=(start,end), title=new + " Range", width=200)
             checkbox_group = CheckboxGroup(labels=["invert selection"], active=[])
-            new_tab.child.children[1].children[2].children[0].children = [slider,checkbox_group]
+            new_tab.child.children[1].children[2].children[1].children[0].disabled = False
+            new_tab.child.children[1].children[2].children[0].children = [slider, checkbox_group]
 
         else:
             print("Something went wrong, unexpected datatype by clinical data value selecting")   # TODO error message?
 
     else:
         new_tab.child.children[1].children[2].children[0].children[0] = PreText(text='please select an attribute')
+        new_tab.child.children[1].children[2].children[1].children[0].disabled = True
 
 
 def update_filter():
