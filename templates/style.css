@@ -47,3 +47,7 @@ body {
     border: 1px solid white;
     margin-top: 5px;
 }
+
+.bk-root .bk-widget select{
+    width: 180px;
+}
