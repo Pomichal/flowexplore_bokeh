@@ -5,7 +5,7 @@ from bokeh.layouts import row, widgetbox, column
 from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, \
     CustomJS, LassoSelectTool, GraphRenderer, StaticLayoutProvider, Circle, MultiLine
 from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn, NumberFormatter, Panel, Tabs, \
-    PreText, DateRangeSlider, RangeSlider, CheckboxGroup
+    PreText, DateRangeSlider, RangeSlider, CheckboxGroup, Div
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.graphs import NodesAndLinkedEdges
 # from bokeh.models.selections import Selection
@@ -39,6 +39,8 @@ populations = pd.DataFrame(columns=['population_name','color'])
 source = ColumnDataSource()
 
 population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))  # TODO add more colors
+
+groups = []
 
 clinical_data = pd.DataFrame()
 
@@ -571,10 +573,10 @@ def update_correlation_plot(attr, old, new):
 def add_group():
     group_number = len(groups_tabs.tabs) + 1
     groups_tabs.tabs = groups_tabs.tabs + [create_panel(group_number)]
+    groups_tabs.active = len(groups_tabs.tabs) - 1
 
 
 def remove_group():
-    print(groups_tabs.active, " ", groups_tabs.tabs)
     groups_tabs.tabs.pop(groups_tabs.active)
 
 
@@ -611,15 +613,15 @@ def create_panel(group_number=1):       # TODO css classes
         level_1 = Select(title='category', value='None', css_classes=['select-width'],
                          options=['None'] + clinical_data.columns.get_level_values(0).unique().tolist())
         level_2 = Select(title='property', value='None', options=['None'])
-        # level_3 = Select(title='value', value='None', options=['None'], width=200)
         level_3 = PreText(text='please select an attribute')
-        add_filter = Button(label='add filter', disabled=True)
+        add_filter = Button(label='add condition', disabled=True)
         level_1.on_change('value', partial(select_columns, select_2=level_2))
-        new_tab = Panel(child=row(edit_box, column(level_1, level_2, row(level_3, add_filter))),
+        categories = Div(text="""""")
+        new_tab = Panel(child=column(row(edit_box, column(level_1, level_2, row(level_3, add_filter))), categories),
                         title="group " + str(group_number),
                         closable=True)
         level_2.on_change('value', partial(select_values, select_1=level_1, new_tab=new_tab))
-        add_filter.on_click(update_filter)
+        add_filter.on_click(partial(update_filter, new_tab=new_tab))
 
     return new_tab
 
@@ -644,11 +646,10 @@ def select_values(attr, old, new, select_1, new_tab):
                 level_3.options = np.unique(
                     [str(obj) for obj in clinical_data[select_1.value][new].iloc[:, 0].dropna().values]).tolist()
             finally:
-                new_tab.child.children[1].children[2].children[1].children[0].disabled = False
-                new_tab.child.children[1].children[2].children[0].children = [level_3]
+                new_tab.child.children[0].children[1].children[2].children[1].children[0].disabled = False
+                new_tab.child.children[0].children[1].children[2].children[0].children = [level_3]
 
         elif 'datetime' in str(clinical_data[select_1.value][new].values.dtype):       # datetime data
-            # print("2    ", clinical_data[select_1.value][new].values.dtype)
             start = clinical_data[select_1.value][new].min().dt.date.item()
             end = clinical_data[select_1.value][new].max().dt.date.item()
             date_slider = DateRangeSlider(title=new + " Date Range: ",
@@ -657,8 +658,8 @@ def select_values(attr, old, new, select_1, new_tab):
                                           value=(start, end),
                                           step=1, width=200)
             checkbox_group = CheckboxGroup(labels=["invert selection"], active=[])
-            new_tab.child.children[1].children[2].children[1].children[0].disabled = False
-            new_tab.child.children[1].children[2].children[0].children = [date_slider, checkbox_group]
+            new_tab.child.children[0].children[1].children[2].children[1].children[0].disabled = False
+            new_tab.child.children[0].children[1].children[2].children[0].children = [date_slider, checkbox_group]
 
         elif 'int' in str(clinical_data[select_1.value][new].values.dtype) or \
                 'float' in str(clinical_data[select_1.value][new].values.dtype):
@@ -667,19 +668,30 @@ def select_values(attr, old, new, select_1, new_tab):
             end = clinical_data[select_1.value][new].max().item()
             slider = RangeSlider(start=start, end=end, step=0.1, value=(start,end), title=new + " Range", width=200)
             checkbox_group = CheckboxGroup(labels=["invert selection"], active=[])
-            new_tab.child.children[1].children[2].children[1].children[0].disabled = False
-            new_tab.child.children[1].children[2].children[0].children = [slider, checkbox_group]
+            new_tab.child.children[0].children[1].children[2].children[1].children[0].disabled = False
+            new_tab.child.children[0].children[1].children[2].children[0].children = [slider, checkbox_group]
 
         else:
             print("Something went wrong, unexpected datatype by clinical data value selecting")   # TODO error message?
 
     else:
-        new_tab.child.children[1].children[2].children[0].children[0] = PreText(text='please select an attribute')
-        new_tab.child.children[1].children[2].children[1].children[0].disabled = True
+        new_tab.child.children[0].children[1].children[2].children[0].children[0] = \
+            PreText(text='please select an attribute')
+        new_tab.child.children[0].children[1].children[2].children[1].children[0].disabled = True
 
 
-def update_filter():
-    print("eee")
+def update_filter(new_tab):
+    level_1 = new_tab.child.children[0].children[1].children[0].children[0].value
+    level_2 = new_tab.child.children[0].children[1].children[1].children[0].value
+    level_3 = new_tab.child.children[0].children[1].children[2].children[0].children
+    if len(level_3) == 2:
+        pass
+        # TODO slider values + invert
+    else:
+        pass
+        # TODO category
+    # new_tab.child.children[1].children[0].text
+    print(level_1, level_2, level_3)
 
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view

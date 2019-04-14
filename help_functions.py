@@ -2,6 +2,10 @@ import matplotlib as mpl
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 import pandas as pd
+from bokeh.layouts import row, widgetbox, column
+from functools import partial
+from bokeh.models import Select
+from bokeh.models.widgets import Button, Panel, PreText, DateRangeSlider, RangeSlider, CheckboxGroup
 
 
 def prepare_data(df_patient, df_coordinates):
