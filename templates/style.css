@@ -31,12 +31,12 @@ body {
 }
 
 .bubbles{
-    border-top: 2px solid white;
-    border-bottom: 2px solid white;
+    border-top: 2px solid white !important;
+    border-bottom: 2px solid white !important;
 }
 
 .bubbles2{
-    border-bottom: 2px solid white;
+    border-bottom: 2px solid white !important;
 }
 
 .group-btn{

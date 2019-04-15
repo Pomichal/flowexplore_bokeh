@@ -607,8 +607,7 @@ def create_panel(group_number=1):       # TODO css classes
 
     if clinical_data.empty:
         level_3 = PreText(text='please upload clinical data')
-        new_tab = Panel(child=level_3, title="group " + str(group_number),
-                        closable=True)
+        new_tab = Panel(child=level_3, title="group " + str(group_number))
 
     else:
         level_1 = Select(title='category', value='None', css_classes=['select-width'],
@@ -619,8 +618,7 @@ def create_panel(group_number=1):       # TODO css classes
         level_1.on_change('value', partial(select_columns, select_2=level_2))
         categories = Div(text="""""")
         new_tab = Panel(child=column(row(edit_box, column(level_1, level_2, row(level_3, add_filter))), categories),
-                        title="group " + str(group_number),
-                        closable=True)
+                        title="group " + str(group_number))
         level_2.on_change('value', partial(select_values, select_1=level_1, new_tab=new_tab))
         add_filter.on_click(partial(update_filter, new_tab=new_tab))
 
@@ -658,6 +656,7 @@ def select_values(attr, old, new, select_1, new_tab):
                                           start=start,
                                           end=end,
                                           value=(start, end),
+                                          value_as_date=True,
                                           step=1, width=200)
             checkbox_group = CheckboxGroup(labels=["invert selection"], active=[])
             new_tab.child.children[0].children[1].children[2].children[1].children[0].disabled = False
