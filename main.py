@@ -5,7 +5,7 @@ from bokeh.layouts import row, widgetbox, column
 from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, \
     CustomJS, LassoSelectTool, GraphRenderer, StaticLayoutProvider, Circle, MultiLine
 from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn, NumberFormatter, Panel, Tabs, \
-    PreText, DateRangeSlider, RangeSlider, CheckboxGroup, Div
+    PreText, DateRangeSlider, RangeSlider, CheckboxGroup, Div, MultiSelect
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.graphs import NodesAndLinkedEdges
 # from bokeh.models.selections import Selection
@@ -15,7 +15,7 @@ from math import pi
 from io import StringIO, BytesIO
 import base64
 
-import help_functions as hf
+from help_functions import help_functions as hf
 
 # import sentry_sdk
 # sentry_sdk.init("https://bc8203f867b04d5ca4e9129f144a192f@sentry.io/1406934")
@@ -574,10 +574,12 @@ def add_group():
     group_number = len(groups_tabs.tabs) + 1
     groups_tabs.tabs = groups_tabs.tabs + [create_panel(group_number)]
     groups_tabs.active = len(groups_tabs.tabs) - 1
+    groups.append({})
 
 
 def remove_group():
     groups_tabs.tabs.pop(groups_tabs.active)
+    groups.pop(groups_tabs.active)
 
 
 def hold(attr, old, new):  # TODO add callback after pointDrawTool action
@@ -597,7 +599,6 @@ def rename_tab(text_input):
 def create_panel(group_number=1):       # TODO css classes
     remove_group_button = Button(label='remove group', width=100, button_type="danger")
     remove_group_button.on_click(remove_group)
-
     group_name = TextInput(placeholder="rename group", width=150, css_classes=['renameGroupTextInput'])
     confirm = Button(label="OK", width=100)
     confirm.on_click(partial(rename_tab, text_input=group_name))
@@ -638,10 +639,11 @@ def select_columns(attr, old, new, select_2):
 def select_values(attr, old, new, select_1, new_tab):
     if new != 'None':
         if clinical_data[select_1.value][new].values.dtype == 'object':     # categorical data
-            level_3 = Select(title='value', value='None', options=['None'], width=200)
+            level_3 = MultiSelect(title='value', value=['None'], options=['None'], width=200)
             try:
                 # print("1  ", clinical_data[select_1.value][new].values.dtype)
                 level_3.options = np.unique(clinical_data[select_1.value][new].iloc[:, 0].dropna().values).tolist()
+                level_3.value = level_3.options[0]
             except TypeError:   # TODO filter non categorical data
                 level_3.options = np.unique(
                     [str(obj) for obj in clinical_data[select_1.value][new].iloc[:, 0].dropna().values]).tolist()
@@ -684,14 +686,28 @@ def update_filter(new_tab):
     level_1 = new_tab.child.children[0].children[1].children[0].children[0].value
     level_2 = new_tab.child.children[0].children[1].children[1].children[0].value
     level_3 = new_tab.child.children[0].children[1].children[2].children[0].children
+    group_no = groups_tabs.active
+    print("old", groups)
     if len(level_3) == 2:
+        start = level_3[0].value[0]
+        end = level_3[0].value[1]
+        invert = len(level_3[1].active) == 1
+        print(start, end, invert)
         pass
         # TODO slider values + invert
     else:
+        categories = level_3[0].value
+        if level_1 in groups[group_no].keys():
+            groups[group_no][level_1][level_2] = categories
+        else:
+            groups[group_no][level_1] = {}
+            groups[group_no][level_1][level_2] = categories
         pass
         # TODO category
+    print("new", groups)
+    print()
     # new_tab.child.children[1].children[0].text
-    print(level_1, level_2, level_3)
+    # print(level_1, level_2, level_3)
 
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view
@@ -799,6 +815,7 @@ upload_clinical_data.js_on_click(CustomJS(args=dict(file_source=file_source_clin
                                           code=open(join(dirname(__file__), "static/js/upload.js")).read()))
 
 group1 = create_panel()
+groups.append({})
 
 groups_tabs = Tabs(tabs=[group1])
 groups_tabs.width = 800
