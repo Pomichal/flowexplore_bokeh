@@ -610,7 +610,8 @@ def create_panel(group_number=1):       # TODO css classes
         new_tab = Panel(child=level_3, title="group " + str(group_number))
 
     else:
-        level_1 = Select(title='category', value='None', css_classes=['select-width'],
+        level_1 = Select(title='category', value='None',
+                         # css_classes=['select-width'],
                          options=['None'] + clinical_data.columns.get_level_values(0).unique().tolist())
         level_2 = Select(title='property', value='None', options=['None'])
         level_3 = PreText(text='please select an attribute')
@@ -726,7 +727,8 @@ file_source_clinical.on_change('data', file_callback_clinical)
 
 # upload tree files
 menu_tree = [("Upload cluster coordinates", "coordinates"), ("Upload graph edges", "edges")]
-tree_dropdown = Dropdown(label="Upload tree structure", button_type="warning", menu=menu_tree)
+tree_dropdown = Dropdown(label="Upload tree structure", button_type="warning", menu=menu_tree,
+                         css_classes=['dropdowns'])
 tree_dropdown.callback = CustomJS(args=dict(file_source=file_source_tree),
                                   code=open(join(dirname(__file__), "static/js/upload.js")).read())
 
@@ -769,7 +771,8 @@ bubble_select.on_click(select_population)
 source.selected.on_change('indices', check_selection)
 
 # add selected to a population
-pop_list = Dropdown(label='add selected to a bubble', menu=[('None', 'None')])
+pop_list = Dropdown(label='add selected to a bubble', menu=[('None', 'None')],
+                    css_classes=['dropdowns'])
 pop_list.on_change('value', add_to_bubble)
 
 # download data new coordinates
