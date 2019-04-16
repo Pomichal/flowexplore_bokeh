@@ -593,7 +593,7 @@ def rename_tab(text_input):
     text_input.value = ""
     new_tabs = Tabs(tabs=groups_tabs.tabs, active=groups_tabs.active)
     groups_tabs = new_tabs
-    layout2.children[2].children[1].children[0] = new_tabs       # TODO time complexity???
+    layout2.children[2].children[1] = new_tabs       # TODO time complexity???
 
 
 def create_panel(group_number=1):       # TODO css classes
@@ -610,15 +610,16 @@ def create_panel(group_number=1):       # TODO css classes
         new_tab = Panel(child=level_3, title="group " + str(group_number))
 
     else:
-        level_1 = Select(title='category', value='None',
+        level_1 = Select(title='category', value='None', width=200,
                          # css_classes=['select-width'],
                          options=['None'] + clinical_data.columns.get_level_values(0).unique().tolist())
-        level_2 = Select(title='property', value='None', options=['None'])
+        level_2 = Select(title='property', value='None', options=['None'], width=200)
         level_3 = PreText(text='please select an attribute')
-        add_filter = Button(label='add condition', disabled=True)
+        add_filter = Button(label='add condition', disabled=True, width=200)
         level_1.on_change('value', partial(select_columns, select_2=level_2))
         categories = Div(text="""""")
-        new_tab = Panel(child=column(row(edit_box, column(level_1, level_2, row(level_3, add_filter))), categories),
+        filter_box = widgetbox([level_1, level_2, level_3, add_filter], css_classes=['full-border'])
+        new_tab = Panel(child=column(row(filter_box, edit_box), categories),
                         title="group " + str(group_number))
         level_2.on_change('value', partial(select_values, select_1=level_1, new_tab=new_tab))
         add_filter.on_click(partial(update_filter, new_tab=new_tab))
@@ -647,63 +648,66 @@ def select_values(attr, old, new, select_1, new_tab):
                 level_3.options = np.unique(
                     [str(obj) for obj in clinical_data[select_1.value][new].iloc[:, 0].dropna().values]).tolist()
             finally:
-                print(new_tab)
-                print(new_tab.child)
-                print(new_tab.child.children)
-                print(new_tab.child.children[0])
-                print(new_tab.child.children[0].children)
-                print(new_tab.child.children[0].children[1])
-                print(new_tab.child.children[0].children[1].children)
-                print(new_tab.child.children[0].children[1].children[2].children)   # [pretext, button]
+                # print(new_tab)
+                # print(new_tab.child)
+                # print(new_tab.child.children)
+                # print(new_tab.child.children[0])
+                # print(new_tab.child.children[0].children)
+                # print(new_tab.child.children[0].children[0])
+                # print(new_tab.child.children[0].children[0].children)   # select1, 2, text, button
+                # print(new_tab.child.children[0].children[0].children[2].children)   # [pretext, button]
                 # print(new_tab.child.children[0].children[1].children[2].children[1].children[0])
-                new_tab.child.children[0].children[1].children[2].children[1].disabled = False
-                new_tab.child.children[0].children[1].children[2].children[0] = column(level_3)
+                new_tab.child.children[0].children[0].children[3].disabled = False
+                new_tab.child.children[0].children[0].children[2] = column(level_3)
 
         elif 'datetime' in str(clinical_data[select_1.value][new].values.dtype):       # datetime data
             start = clinical_data[select_1.value][new].min().dt.date.item()
             end = clinical_data[select_1.value][new].max().dt.date.item()
-            date_slider = DateRangeSlider(title=new + " Date Range: ",
+            date_slider = DateRangeSlider(title="",
                                           start=start,
                                           end=end,
                                           value=(start, end),
                                           # value_as_date=True,
-                                          step=1, width=200)
-            checkbox_group = CheckboxGroup(labels=["invert selection"], active=[])
-            new_tab.child.children[0].children[1].children[2].children[1].disabled = False
-            new_tab.child.children[0].children[1].children[2].children[0] = column(date_slider, checkbox_group)
+                                          step=1, width=180)
+            checkbox_group = CheckboxGroup(labels=["invert selection"], active=[], width=180)
+            new_tab.child.children[0].children[0].children[3].disabled = False
+            new_tab.child.children[0].children[0].children[2] = column(date_slider, checkbox_group)
 
         elif 'int' in str(clinical_data[select_1.value][new].values.dtype) or \
                 'float' in str(clinical_data[select_1.value][new].values.dtype):
             # print("3   ", clinical_data[select_1.value][new].values.dtype)
             start = clinical_data[select_1.value][new].min().item()
             end = clinical_data[select_1.value][new].max().item()
-            slider = RangeSlider(start=start, end=end, step=0.1, value=(start,end), title=new + " Range", width=200)
-            checkbox_group = CheckboxGroup(labels=["invert selection"], active=[])
-            new_tab.child.children[0].children[1].children[2].children[1].disabled = False
-            new_tab.child.children[0].children[1].children[2].children[0] = column(slider, checkbox_group)
+            slider = RangeSlider(start=start, end=end, step=0.1, value=(start, end), title=new + " Range", width=180)
+            checkbox_group = CheckboxGroup(labels=["invert selection"], active=[], width=180)
+            new_tab.child.children[0].children[0].children[3].disabled = False
+            new_tab.child.children[0].children[0].children[2] = column(slider, checkbox_group)
 
         else:
             print("Something went wrong, unexpected datatype by clinical data value selecting")   # TODO error message?
 
     else:
         new_tab.child.children[0].children[1].children[2].children[0].children[0] = \
-            PreText(text='please select an attribute')
+            PreText(text='please select an attribute', width=200)
         new_tab.child.children[0].children[1].children[2].children[1].children[0].disabled = True
 
 
 def update_filter(new_tab):
-    level_1 = new_tab.child.children[0].children[1].children[0].children[0].value
-    level_2 = new_tab.child.children[0].children[1].children[1].children[0].value
-    level_3 = new_tab.child.children[0].children[1].children[2].children[0].children
+    level_1 = new_tab.child.children[0].children[0].children[0].value
+    level_2 = new_tab.child.children[0].children[0].children[1].value
+    level_3 = new_tab.child.children[0].children[0].children[2].children
     group_no = groups_tabs.active
     print("old", groups)
     if len(level_3) == 2:
         start = level_3[0].value[0]
         end = level_3[0].value[1]
         invert = len(level_3[1].active) == 1
-        print(start, end, invert)
+        if level_1 in groups[group_no].keys():
+            groups[group_no][level_1][level_2] = (invert, start, end)
+        else:
+            groups[group_no][level_1] = {}
+            groups[group_no][level_1][level_2] = (invert, start, end)
         pass
-        # TODO slider values + invert
     else:
         categories = level_3[0].value
         if level_1 in groups[group_no].keys():
@@ -711,12 +715,31 @@ def update_filter(new_tab):
         else:
             groups[group_no][level_1] = {}
             groups[group_no][level_1][level_2] = categories
-        pass
-        # TODO category
+
+    new_tab.child.children[1].text = write_conditions(groups[group_no])
     print("new", groups)
+    print(write_conditions(groups[group_no]))
     print()
-    # new_tab.child.children[1].children[0].text
-    # print(level_1, level_2, level_3)
+
+
+def write_conditions(conditions, tag="li"):
+    conditions_text = "<h3>conditions:</h3><ul>"
+
+    for k, v in conditions.items():
+        for key, value in v.items():
+            if len(value) == 3:
+                print("a", value)
+                if value[0]:
+                    conditions_text += "<" + tag + ">" + key + " in &lt; min, " + str(value[1]) + "&gt; OR &lt; " \
+                                       + str(value[2]) + ", max &gt; </" + tag + ">"
+                else:
+                    conditions_text += "<" + tag + ">" + key + " in &lt; " + str(value[1]) + " , " + str(value[2]) \
+                                       + " &gt; </" + tag + ">"
+            else:
+                print("b", value)
+                conditions_text += "<" + tag + ">" + key + " in " + str(value) + "</" + tag + ">"
+
+    return conditions_text + "</ul>"
 
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view
