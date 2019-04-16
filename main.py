@@ -642,13 +642,22 @@ def select_values(attr, old, new, select_1, new_tab):
             try:
                 # print("1  ", clinical_data[select_1.value][new].values.dtype)
                 level_3.options = np.unique(clinical_data[select_1.value][new].iloc[:, 0].dropna().values).tolist()
-                level_3.value = level_3.options[0]
+                level_3.value = [level_3.options[0]]
             except TypeError:   # TODO filter non categorical data
                 level_3.options = np.unique(
                     [str(obj) for obj in clinical_data[select_1.value][new].iloc[:, 0].dropna().values]).tolist()
             finally:
-                new_tab.child.children[0].children[1].children[2].children[1].children[0].disabled = False
-                new_tab.child.children[0].children[1].children[2].children[0].children = [level_3]
+                print(new_tab)
+                print(new_tab.child)
+                print(new_tab.child.children)
+                print(new_tab.child.children[0])
+                print(new_tab.child.children[0].children)
+                print(new_tab.child.children[0].children[1])
+                print(new_tab.child.children[0].children[1].children)
+                print(new_tab.child.children[0].children[1].children[2].children)   # [pretext, button]
+                # print(new_tab.child.children[0].children[1].children[2].children[1].children[0])
+                new_tab.child.children[0].children[1].children[2].children[1].disabled = False
+                new_tab.child.children[0].children[1].children[2].children[0] = column(level_3)
 
         elif 'datetime' in str(clinical_data[select_1.value][new].values.dtype):       # datetime data
             start = clinical_data[select_1.value][new].min().dt.date.item()
@@ -657,11 +666,11 @@ def select_values(attr, old, new, select_1, new_tab):
                                           start=start,
                                           end=end,
                                           value=(start, end),
-                                          value_as_date=True,
+                                          # value_as_date=True,
                                           step=1, width=200)
             checkbox_group = CheckboxGroup(labels=["invert selection"], active=[])
-            new_tab.child.children[0].children[1].children[2].children[1].children[0].disabled = False
-            new_tab.child.children[0].children[1].children[2].children[0].children = [date_slider, checkbox_group]
+            new_tab.child.children[0].children[1].children[2].children[1].disabled = False
+            new_tab.child.children[0].children[1].children[2].children[0] = column(date_slider, checkbox_group)
 
         elif 'int' in str(clinical_data[select_1.value][new].values.dtype) or \
                 'float' in str(clinical_data[select_1.value][new].values.dtype):
@@ -670,8 +679,8 @@ def select_values(attr, old, new, select_1, new_tab):
             end = clinical_data[select_1.value][new].max().item()
             slider = RangeSlider(start=start, end=end, step=0.1, value=(start,end), title=new + " Range", width=200)
             checkbox_group = CheckboxGroup(labels=["invert selection"], active=[])
-            new_tab.child.children[0].children[1].children[2].children[1].children[0].disabled = False
-            new_tab.child.children[0].children[1].children[2].children[0].children = [slider, checkbox_group]
+            new_tab.child.children[0].children[1].children[2].children[1].disabled = False
+            new_tab.child.children[0].children[1].children[2].children[0] = column(slider, checkbox_group)
 
         else:
             print("Something went wrong, unexpected datatype by clinical data value selecting")   # TODO error message?
