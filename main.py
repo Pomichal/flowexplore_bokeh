@@ -648,15 +648,6 @@ def select_values(attr, old, new, select_1, new_tab):
                 level_3.options = np.unique(
                     [str(obj) for obj in clinical_data[select_1.value][new].iloc[:, 0].dropna().values]).tolist()
             finally:
-                # print(new_tab)
-                # print(new_tab.child)
-                # print(new_tab.child.children)
-                # print(new_tab.child.children[0])
-                # print(new_tab.child.children[0].children)
-                # print(new_tab.child.children[0].children[0])
-                # print(new_tab.child.children[0].children[0].children)   # select1, 2, text, button
-                # print(new_tab.child.children[0].children[0].children[2].children)   # [pretext, button]
-                # print(new_tab.child.children[0].children[1].children[2].children[1].children[0])
                 new_tab.child.children[0].children[0].children[3].disabled = False
                 new_tab.child.children[0].children[0].children[2] = column(level_3)
 
@@ -668,7 +659,8 @@ def select_values(attr, old, new, select_1, new_tab):
                                           end=end,
                                           value=(start, end),
                                           # value_as_date=True,
-                                          step=1, width=180)
+                                          # step=1,
+                                          width=180)
             checkbox_group = CheckboxGroup(labels=["invert selection"], active=[], width=180)
             new_tab.child.children[0].children[0].children[3].disabled = False
             new_tab.child.children[0].children[0].children[2] = column(date_slider, checkbox_group)
@@ -687,9 +679,9 @@ def select_values(attr, old, new, select_1, new_tab):
             print("Something went wrong, unexpected datatype by clinical data value selecting")   # TODO error message?
 
     else:
-        new_tab.child.children[0].children[1].children[2].children[0].children[0] = \
+        new_tab.child.children[0].children[0].children[2] = \
             PreText(text='please select an attribute', width=200)
-        new_tab.child.children[0].children[1].children[2].children[1].children[0].disabled = True
+        new_tab.child.children[0].children[0].children[3].disabled = True
 
 
 def update_filter(new_tab):
@@ -699,15 +691,19 @@ def update_filter(new_tab):
     group_no = groups_tabs.active
     print("old", groups)
     if len(level_3) == 2:
-        start = level_3[0].value[0]
-        end = level_3[0].value[1]
+        if 'datetime' in str(clinical_data[level_1][level_2].values.dtype):
+            start = level_3[0].value_as_date[0]
+            end = level_3[0].value_as_date[1]
+        else:
+            start = level_3[0].value[0]
+            end = level_3[0].value[1]
         invert = len(level_3[1].active) == 1
         if level_1 in groups[group_no].keys():
             groups[group_no][level_1][level_2] = (invert, start, end)
         else:
             groups[group_no][level_1] = {}
             groups[group_no][level_1][level_2] = (invert, start, end)
-        pass
+
     else:
         categories = level_3[0].value
         if level_1 in groups[group_no].keys():
@@ -722,13 +718,12 @@ def update_filter(new_tab):
     print()
 
 
-def write_conditions(conditions, tag="li"):
+def write_conditions(conditions, tag="li"):     # TODO drop empty conditions
     conditions_text = "<h3>conditions:</h3><ul>"
 
     for k, v in conditions.items():
         for key, value in v.items():
-            if len(value) == 3:
-                print("a", value)
+            if len(value) == 3 and type(value[0]) is bool:
                 if value[0]:
                     conditions_text += "<" + tag + ">" + key + " in &lt; min, " + str(value[1]) + "&gt; OR &lt; " \
                                        + str(value[2]) + ", max &gt; </" + tag + ">"
@@ -736,7 +731,6 @@ def write_conditions(conditions, tag="li"):
                     conditions_text += "<" + tag + ">" + key + " in &lt; " + str(value[1]) + " , " + str(value[2]) \
                                        + " &gt; </" + tag + ">"
             else:
-                print("b", value)
                 conditions_text += "<" + tag + ">" + key + " in " + str(value) + "</" + tag + ">"
 
     return conditions_text + "</ul>"
