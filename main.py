@@ -17,9 +17,6 @@ import base64
 
 from help_functions import help_functions as hf
 
-# import sentry_sdk
-# sentry_sdk.init("https://bc8203f867b04d5ca4e9129f144a192f@sentry.io/1406934")
-
 file_source_tree = ColumnDataSource({'file_contents': [], 'file_name': []})
 
 file_source_populations = ColumnDataSource({'file_contents': [], 'file_name': []})
@@ -34,15 +31,15 @@ tree = {'coordinates': pd.DataFrame(), 'edges': pd.DataFrame()}
 
 df_viz = pd.DataFrame()
 
-populations = pd.DataFrame(columns=['population_name','color'])
+populations = pd.DataFrame(columns=['population_name', 'color'])
 
 source = ColumnDataSource()
 
 population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))  # TODO add more colors
 
-groups = []
-
 clinical_data = pd.DataFrame()
+
+groups = []     # conditions for groups of patients
 
 
 def file_callback_tree(attr, old, new):  # TODO file check
@@ -57,8 +54,6 @@ def file_callback_tree(attr, old, new):  # TODO file check
     file_contents = base64.b64decode(b64_contents)
     file_io = StringIO(bytes.decode(file_contents))
     df = pd.read_csv(file_io)
-    # print("file contents:")
-    # print(df)
     if tree_dropdown.value == 'coordinates':
         tree['coordinates'] = df
         tree_dropdown.menu[0] = ("coordinates ok (" + filename + ")", 'coordinates')
@@ -111,7 +106,6 @@ def file_callback_populations(attr, old, new):  # TODO file check
             pop_list.menu.append((pop_name, str(len(populations) - 1)))
 
             indices = [int(a) for a in split_line[1].split(",")]
-            # print(indices)
 
             df_viz.loc[indices, 'populationID'] = len(populations) - 1
             patches = {
@@ -136,10 +130,7 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload population dat
     prefix, b64_contents = raw_contents.split(",", 1)
     file_contents = base64.b64decode(b64_contents)
     file_io = StringIO(bytes.decode(file_contents))
-    # print("file contents:")
-    # print(df)
     df = pd.read_csv(file_io)
-    # print(filename.split(".")[0])
     ind = filename.split(".")[0]
     if 'Unnamed: 0' in df.columns:  # TODO drop all Unnamed
         df.drop(columns=['Unnamed: 0'], inplace=True)
@@ -152,7 +143,6 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload population dat
 def file_callback_clinical(attr, old, new):  # TODO file check
     global clinical_data
 
-    # filename = file_source_clinical.data['file_name'][0]
     raw_contents = file_source_clinical.data['file_contents'][0]
 
     # remove the prefix that JS adds
@@ -163,13 +153,10 @@ def file_callback_clinical(attr, old, new):  # TODO file check
     clinical_data = pd.read_excel(file_io, header=[0, 1, 2])
 
     upload_clinical_data.button_type = 'success'
-    # print(group1)
     groups_tabs.tabs[0] = create_panel()
-    # group1 = create_panel()
+    groups[0][1] = map_measurements_to_patients()
+
     add_group_button.disabled = False
-    # options = ['None'] + clinical_data.columns.get_level_values(0).unique().tolist()
-    # print(group1.child.children(1).children(0))
-    # print(clinical_data)
 
 
 def create_figure(df, df_edges, df_populations):
@@ -268,8 +255,6 @@ def create_figure(df, df_edges, df_populations):
 
         p.add_tools(hover)
         draw_tool = PointDrawTool(renderers=[renderer], add=False)
-        # callback = CustomJS(code="console.log('tap event occurred')")
-        # p.js_on_event('lodend', callback)
         p.add_tools(draw_tool)
         p.toolbar.active_tap = draw_tool
 
@@ -307,40 +292,6 @@ def create_figure(df, df_edges, df_populations):
                tools='pan, box_zoom,reset, wheel_zoom, box_select, lasso_select,tap',
                toolbar_location="above")
     return p
-
-
-# trying drawing using graphs, but missing easily moving of vertices
-def create_figure2(df):
-    N = len(df)
-    node_indices = list(range(1, N + 1))
-
-    plot = figure(title='Graph Layout Demonstration', x_range=(-1.1, 600), y_range=(-1.1, 600),
-                  tools='pan, wheel_zoom, box_select', toolbar_location='above')
-
-    graph = GraphRenderer()
-
-    graph.node_renderer.data_source.add(node_indices, 'index')
-    # graph.node_renderer.data_source.add(Spectral8, 'color')
-    graph.node_renderer.glyph = Circle(radius=15)
-
-    graph.selection_policy = NodesAndLinkedEdges()
-
-    graph.edge_renderer.glyph = MultiLine(line_color="#CCCCCC", line_alpha=0.8, line_width=1)
-    graph.edge_renderer.data_source.data = dict(
-        start=edges['edges.from'].tolist(),
-        end=edges['edges.to'].tolist())
-
-    # start of layout code
-    xx = df['x']
-    yy = df['y']
-    graph_layout = dict(zip(node_indices, zip(xx, yy)))
-    graph.layout_provider = StaticLayoutProvider(graph_layout=graph_layout)
-
-    plot.renderers.append(graph)
-
-    draw_tool = PointDrawTool(add=False, renderers=[graph])
-    plot.add_tools(draw_tool)
-    return plot
 
 
 def update(attr, old, new):
@@ -459,7 +410,7 @@ def select_patient(attr, old, new):
                 (df_viz.columns.tolist()[0] if 'ID' not in df_viz.columns.tolist()[0] else df_viz.columns.tolist()[1])
             y.options = df_viz.columns.tolist()
             y.value = 'y' if 'y' in df_viz.columns.tolist() else \
-                (df_viz.columns.tolist()[1] if 'ID' not in df_viz.columns.tolist()[1] else df_viz.columns.tolist()[2])
+                (df_viz.columns.tolist()[-1] if 'ID' not in df_viz.columns.tolist()[-1] else df_viz.columns.tolist()[-2])
             color.options = ['None'] + df_viz.columns.tolist()
             color.value = 'None'
             size.options = ['None'] + df_viz.columns.tolist()
@@ -571,10 +522,10 @@ def update_correlation_plot(attr, old, new):
 
 
 def add_group():
-    group_number = len(groups_tabs.tabs) + 1
+    group_number = len(groups_tabs.tabs)
+    groups.append([{}, pd.DataFrame(map_measurements_to_patients(), columns=['measurements', 'patient'])])
     groups_tabs.tabs = groups_tabs.tabs + [create_panel(group_number)]
     groups_tabs.active = len(groups_tabs.tabs) - 1
-    groups.append({})
 
 
 def remove_group():
@@ -596,7 +547,7 @@ def rename_tab(text_input):
     layout2.children[2].children[1] = new_tabs       # TODO time complexity???
 
 
-def create_panel(group_number=1):       # TODO css classes
+def create_panel(group_number=0):       # TODO css classes
     remove_group_button = Button(label='remove group', width=100, button_type="danger")
     remove_group_button.on_click(remove_group)
     group_name = TextInput(placeholder="rename group", width=150, css_classes=['renameGroupTextInput'])
@@ -618,11 +569,18 @@ def create_panel(group_number=1):       # TODO css classes
         add_filter = Button(label='add condition', disabled=True, width=200)
         level_1.on_change('value', partial(select_columns, select_2=level_2))
         categories = Div(text="""""")
+        groups[group_number][1] = map_measurements_to_patients()
+        new_columns = [
+            TableColumn(field='measurements', title='measurements'),
+            TableColumn(field='patient', title='patient')
+        ]
+        patient_table = DataTable(source=ColumnDataSource(groups[group_number][1]),
+                                  columns=new_columns, width=400, height=850, reorderable=True)
         filter_box = widgetbox([level_1, level_2, level_3, add_filter], css_classes=['full-border'])
-        new_tab = Panel(child=column(row(filter_box, edit_box), categories),
+        new_tab = Panel(child=column(row(filter_box, edit_box), categories,patient_table),
                         title="group " + str(group_number))
         level_2.on_change('value', partial(select_values, select_1=level_1, new_tab=new_tab))
-        add_filter.on_click(partial(update_filter, new_tab=new_tab))
+        add_filter.on_click(partial(add_value_to_filter, new_tab=new_tab))
 
     return new_tab
 
@@ -684,12 +642,26 @@ def select_values(attr, old, new, select_1, new_tab):
         new_tab.child.children[0].children[0].children[3].disabled = True
 
 
-def update_filter(new_tab):
+def find_measurements(patient_list):
+    # print(old_list)
+    # print(patient_list)
+    measurement_list = {}
+    for pat in patient_list:
+        measurement_list[pat] = []
+        for measurement in patients_data.keys():
+            if pat + "-" in measurement:
+                measurement_list[pat].append(measurement)
+        if not measurement_list[pat]:
+            measurement_list.pop(pat)
+    return measurement_list
+
+
+def add_value_to_filter(new_tab):
     level_1 = new_tab.child.children[0].children[0].children[0].value
     level_2 = new_tab.child.children[0].children[0].children[1].value
     level_3 = new_tab.child.children[0].children[0].children[2].children
     group_no = groups_tabs.active
-    print("old", groups)
+    # print("old", groups)
     if len(level_3) == 2:
         if 'datetime' in str(clinical_data[level_1][level_2].values.dtype):
             start = level_3[0].value_as_date[0]
@@ -698,24 +670,40 @@ def update_filter(new_tab):
             start = level_3[0].value[0]
             end = level_3[0].value[1]
         invert = len(level_3[1].active) == 1
-        if level_1 in groups[group_no].keys():
-            groups[group_no][level_1][level_2] = (invert, start, end)
-        else:
-            groups[group_no][level_1] = {}
-            groups[group_no][level_1][level_2] = (invert, start, end)
+        if level_1 not in groups[group_no][0].keys():
+            groups[group_no][0][level_1] = {}
+        groups[group_no][0][level_1][level_2] = (invert, start, end)
 
+        df = clinical_data[level_1][level_2]
+        if invert:
+            i = df[df.columns[0]][(df[df.columns[0]] < pd.Timestamp(start))
+                                  | (df[df.columns[0]] > pd.Timestamp(end))].index
+        else:
+            i = df[df.columns[0]][(df[df.columns[0]] > pd.Timestamp(start))
+                              & (df[df.columns[0]] < pd.Timestamp(end))].index
+
+        measurements = find_measurements(i)
+        new_df = pd.DataFrame(columns=['measurements', 'patient'])
+        for k, v in measurements.items():
+            for val in v:
+                df = pd.DataFrame([[val, k]], columns=['measurements', 'patient'])
+                new_df = new_df.append(df)
+        groups[group_no][1] = new_df
+        print("GGG", new_df)
+        print("#######################################################")
+        new_tab.child.children[2].source = ColumnDataSource(groups[group_no][1])
     else:
         categories = level_3[0].value
-        if level_1 in groups[group_no].keys():
-            groups[group_no][level_1][level_2] = categories
+        if level_1 in groups[group_no][0].keys():
+            groups[group_no][0][level_1][level_2] = categories
         else:
-            groups[group_no][level_1] = {}
-            groups[group_no][level_1][level_2] = categories
+            groups[group_no][0][level_1] = {}
+            groups[group_no][0][level_1][level_2] = categories
 
-    new_tab.child.children[1].text = write_conditions(groups[group_no])
-    print("new", groups)
-    print(write_conditions(groups[group_no]))
-    print()
+    new_tab.child.children[1].text = write_conditions(groups[group_no][0])
+    # print("new", groups)
+    # print(write_conditions(groups[group_no]))
+    # print()
 
 
 def write_conditions(conditions, tag="li"):     # TODO drop empty conditions
@@ -734,6 +722,20 @@ def write_conditions(conditions, tag="li"):     # TODO drop empty conditions
                 conditions_text += "<" + tag + ">" + key + " in " + str(value) + "</" + tag + ">"
 
     return conditions_text + "</ul>"
+
+
+def map_measurements_to_patients():
+    # print("#############################################################################")
+    new_df = pd.DataFrame(columns=['measurements', 'patient'])
+    pat_list = clinical_data.index.dropna()
+    # measurement_list = patients_data.keys()
+    for k, v in find_measurements(pat_list).items():
+        for val in v:
+            df = pd.DataFrame([[val, k]], columns=['measurements', 'patient'])
+            new_df = new_df.append(df)
+    # print(new_df)
+    # print("#############################################################################")
+    return new_df
 
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view
@@ -842,8 +844,9 @@ upload_clinical_data = Button(label='upload clinical data', width=200)
 upload_clinical_data.js_on_click(CustomJS(args=dict(file_source=file_source_clinical),
                                           code=open(join(dirname(__file__), "static/js/upload.js")).read()))
 
-group1 = create_panel()
-groups.append({})
+group1 = create_panel(
+)
+groups.append([{}, pd.DataFrame(map_measurements_to_patients(), columns=['measurements', 'patient'])])
 
 groups_tabs = Tabs(tabs=[group1])
 groups_tabs.width = 800

@@ -70,3 +70,36 @@ def scale(old_value, old_min, old_max, new_min=25, new_max=50):
     old_range = (old_max - old_min)
     new_range = (new_max - new_min)
     return (((old_value - old_min) * new_range) / old_range) + new_min
+
+# trying drawing using graphs, but missing easily moving of vertices
+# def create_figure2(df):
+#     N = len(df)
+#     node_indices = list(range(1, N + 1))
+#
+#     plot = figure(title='Graph Layout Demonstration', x_range=(-1.1, 600), y_range=(-1.1, 600),
+#                   tools='pan, wheel_zoom, box_select', toolbar_location='above')
+#
+#     graph = GraphRenderer()
+#
+#     graph.node_renderer.data_source.add(node_indices, 'index')
+#     graph.node_renderer.data_source.add(Spectral8, 'color')
+    # graph.node_renderer.glyph = Circle(radius=15)
+    #
+    # graph.selection_policy = NodesAndLinkedEdges()
+    #
+    # graph.edge_renderer.glyph = MultiLine(line_color="#CCCCCC", line_alpha=0.8, line_width=1)
+    # graph.edge_renderer.data_source.data = dict(
+    #     start=edges['edges.from'].tolist(),
+    #     end=edges['edges.to'].tolist())
+    #
+    # start of layout code
+    # xx = df['x']
+    # yy = df['y']
+    # graph_layout = dict(zip(node_indices, zip(xx, yy)))
+    # graph.layout_provider = StaticLayoutProvider(graph_layout=graph_layout)
+    #
+    # plot.renderers.append(graph)
+    #
+    # draw_tool = PointDrawTool(add=False, renderers=[graph])
+    # plot.add_tools(draw_tool)
+    # return plot
