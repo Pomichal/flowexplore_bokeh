@@ -157,6 +157,7 @@ def file_callback_clinical(attr, old, new):  # TODO file check
     groups[0][1] = map_measurements_to_patients()
 
     add_group_button.disabled = False
+    create_ref_group_button.disabled = False
 
 
 def create_figure(df, df_edges, df_populations):
@@ -521,15 +522,66 @@ def update_correlation_plot(attr, old, new):
     layout2.children[1] = correlation_plot()
 
 
+def find_healthy():
+    # print("#############################################################################")
+    measurements = []
+    for pat in patients_data.keys():
+        pat_name = "-".join(pat.split("-")[:2])
+        if pat_name not in clinical_data.index:
+            measurements += [pat]
+
+    new_df = pd.DataFrame(columns=['measurements', 'patient'])
+
+    for m in measurements:
+        df = pd.DataFrame([[m, 'healthy']], columns=['measurements', 'patient'])
+        new_df = new_df.append(df)
+    return new_df.reset_index(drop=True)
+
+
+def create_reference_group_tab():
+    group_number = len(groups_tabs.tabs)
+
+    remove_group_button = Button(label='remove group', width=100, button_type="danger")
+    remove_group_button.on_click(remove_group)
+    group_name = TextInput(placeholder="rename group", width=150, css_classes=['renameGroupTextInput'])
+    confirm = Button(label="OK", width=100)
+    confirm.on_click(partial(rename_tab, text_input=group_name))
+
+    edit_box = widgetbox([remove_group_button, group_name, confirm], width=200, css_classes=['full-border'])
+
+    categories = Div(text="""<h3>reference group</h3>""")
+
+    remove_measurement = Button(label="remove measuremt(s)", button_type='danger', width=200)
+    remove_measurement.on_click(remove_measurements)
+    groups.append([{}, pd.DataFrame(map_measurements_to_patients(), columns=['measurements', 'patient'])])
+    groups[group_number][1] = find_healthy()    # TODO change to healthy
+    # groups[group_number][1].on_change('selected', enable_remove_button)
+    new_columns = [
+        TableColumn(field='measurements', title='measurements'),
+        TableColumn(field='patient', title='patient')
+    ]
+    patient_table = DataTable(source=ColumnDataSource(groups[group_number][1]),
+                              columns=new_columns, width=400, height=850, reorderable=True)
+    # new_tab = Panel(child=row(patient_table, remove_measurement), title="reference group")
+
+    new_tab = Panel(child=column(row(edit_box), categories,
+                                 row(patient_table, remove_measurement)),
+                    title="reference group")
+
+    groups_tabs.tabs = groups_tabs.tabs + [new_tab]
+    groups_tabs.active = len(groups_tabs.tabs) - 1
+
+
+def remove_measurements_reference_group():
+    group_no = groups_tabs.active
+    indices = groups_tabs.tabs[groups_tabs.active].child.children[0].source.selected.indices
+    groups[groups_tabs.active][1].drop(groups[groups_tabs.active][1].index[indices], inplace=True)
+    groups_tabs.tabs[group_no].child.children[0].source = ColumnDataSource(groups[group_no][1])
+
+
 def remove_measurements():
-    # print("ujujujujujuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu")
-    # print(tab_no)
     group_no = groups_tabs.active
     indices = groups_tabs.tabs[groups_tabs.active].child.children[2].children[0].source.selected.indices
-    # print(groups[groups_tabs.active][1].index)
-    # print(groups[groups_tabs.active][1].index[indices])
-    # print(groups[groups_tabs.active][1].drop(groups[groups_tabs.active][1].index[indices]))
-    # groups[groups_tabs.active][1] = groups[groups_tabs.active][1].drop(groups[groups_tabs.active][1].index[indices])
     groups[groups_tabs.active][1].drop(groups[groups_tabs.active][1].index[indices], inplace=True)
     groups_tabs.tabs[group_no].child.children[2].children[0].source = ColumnDataSource(groups[group_no][1])
 
@@ -867,6 +919,9 @@ basic_overview = widgetbox([create_bubble_stats, marker], width=200)
 add_group_button = Button(label='Add new group', width=200, disabled=True)
 add_group_button.on_click(add_group)
 
+create_ref_group_button = Button(label="Create reference group", width=200, disabled=True)
+create_ref_group_button.on_click(create_reference_group_tab)
+
 upload_clinical_data = Button(label='upload clinical data', width=200)
 upload_clinical_data.js_on_click(CustomJS(args=dict(file_source=file_source_clinical),
                                           code=open(join(dirname(__file__), "static/js/upload.js")).read()))
@@ -878,7 +933,8 @@ groups.append([{}, pd.DataFrame(map_measurements_to_patients(), columns=['measur
 groups_tabs = Tabs(tabs=[group1])
 groups_tabs.width = 800
 
-layout2 = row(basic_overview, correlation_plot(), column(children=[row(add_group_button, upload_clinical_data),
+layout2 = row(basic_overview, correlation_plot(), column(children=[row(add_group_button, create_ref_group_button,
+                                                                       upload_clinical_data),
                                                                    groups_tabs]))
 
 tab2 = Panel(child=layout2, title="group selection view")
