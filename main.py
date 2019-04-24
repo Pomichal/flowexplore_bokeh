@@ -400,7 +400,6 @@ def load_test_data():
 
     file_io = open(join(dirname(__file__), 'data/populations.txt'), "r")
     text = list(iter(file_io.read().splitlines()))
-    print(text)
     df_viz['populationID'] = -1
     populations = pd.DataFrame()
     for line in text:
@@ -510,17 +509,16 @@ def create_stats_tables():  # TODO remove error, if running without coordinates 
 
         # select column with cell count
         # TODO better condition to filter columns and find cell count
-        print(df_patient)
-        print(df_patient['cells'].values.dtype)
         int_cols = list(filter(
-            lambda a: (not "id" in a.lower()) and df_patient[a].nunique() > 2 and ('int' in df_patient[a].values.dtype),
+            lambda a: (not "id" in a.lower()) and df_patient[a].nunique() > 2 and ('int' in str(df_patient[a].values.dtype)),
             df_patient.columns))
-        print(pat, int_cols)
-        if len(int_cols) > 1:
+        # print(pat, int_cols)
+        if len(int_cols) != 1:
             print("ERROR")  # TODO error message
+            return
         else:
             cell_count_column = int_cols[0]
-            print(cell_count_column)
+            # print("THIS IS", cell_count_column)
             cell_sum = df_patient[cell_count_column].sum()
             # print(cell_sum)
             for idx_b, b in enumerate(bubbles):
@@ -533,6 +531,7 @@ def create_stats_tables():  # TODO remove error, if running without coordinates 
                     else:
                         df_stats.loc[(b, m), pat] = reduce(lambda p, q: p + q, clusters[cell_count_column].values)
     df_stats = df_stats.astype(float)
+    marker.value = cell_count_column
     # print(df_stats)
 
 
