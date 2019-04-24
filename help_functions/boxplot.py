@@ -9,18 +9,14 @@ def create_boxplot(df=pd.DataFrame()):
     # generate some synthetic time series for six different categories
     if not df.empty:
         cats = df['group'].unique()
-        print(cats)
         value = df.columns[0]
         yy = np.random.randn(2000)
         g = np.random.choice(cats, 2000)
         for i, l in enumerate(cats):
             yy[g == l] += i // 2
-        # df = pd.DataFrame(dict(score=yy, group=g))
 
         # find the quartiles and IQR for each category
-        # print(df)
         groups = df.groupby('group')
-        # print(groups)
         q1 = groups.quantile(q=0.25)
         q2 = groups.quantile(q=0.5)
         q3 = groups.quantile(q=0.75)
@@ -28,8 +24,6 @@ def create_boxplot(df=pd.DataFrame()):
         upper = q3 + 1.5 * iqr
         lower = q1 - 1.5 * iqr
 
-        # print("test", groups)
-        # print("testst", upper[value])
         # find the outliers for each category
         def outliers(group):
             cat = group.name
@@ -62,8 +56,12 @@ def create_boxplot(df=pd.DataFrame()):
         p.vbar(cats, 0.7, q1[value], q2[value], fill_color="#3B8686", line_color="black")
 
         # whiskers (almost-0 height rects simpler than segments)
-        p.rect(cats, lower[value], 0.2, 0.01, line_color="black")
-        p.rect(cats, upper[value], 0.2, 0.01, line_color="black")
+        # print(iqr)
+        # print(iqr.iloc[:,0].max())
+        # max_iqr = iqr.iloc[:,0].min()
+        range_y = upper.iloc[:,0].max() - lower.iloc[:,0].min()
+        p.rect(cats, lower[value], 0.2, range_y/500, line_color="black")
+        p.rect(cats, upper[value], 0.2, range_y/500, line_color="black")
 
         # outliers
         if not out.empty:
