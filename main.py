@@ -40,7 +40,7 @@ population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))  # T
 
 clinical_data = pd.DataFrame()
 
-groups = []     # conditions for groups of patients
+groups = []  # conditions for groups of patients
 
 
 def file_callback_tree(attr, old, new):  # TODO file check
@@ -319,43 +319,21 @@ def create_bubble():
 
 
 def load_test_data():
-    global patient_data
-    global coordinates
-    global edges
     global df_viz
     global source
+    global populations
 
-    patient_data = pd.read_csv(join(dirname(__file__), 'data/patient_36.csv'))
-    patient_data2 = pd.read_csv(join(dirname(__file__), 'data/patient_38.csv'))
-    coordinates = pd.read_csv(join(dirname(__file__), 'data/coordinates.csv'))
-    edges = pd.read_csv(join(dirname(__file__), 'data/edges.csv'))
-
-    tree['coordinates'] = coordinates
-    tree_dropdown.menu[0] = ("coordinates ok (coordinates.csv)", 'coordinates')
+#################################################################### coordinates
+    filename = 'coordinates.csv'
+    df = pd.read_csv(join(dirname(__file__), 'data/coordinates.csv'))
+    # if tree_dropdown.value == 'coordinates':
+    tree['coordinates'] = df
+    tree_dropdown.menu[0] = ("coordinates ok (" + filename + ")", 'coordinates')
     df_viz['x'] = tree['coordinates'].iloc[:, 1].values
     df_viz['y'] = tree['coordinates'].iloc[:, 2].values
     df_viz['populationID'] = -1
     source.data = df_viz.to_dict(orient='list')
-
-    tree['edges'] = edges
-    tree_dropdown.menu[1] = ("edges ok (edges.csv)", 'edges')
-    tree_dropdown.button_type = 'success'
-
-    ind = "36"
-    if 'Unnamed: 0' in patient_data.columns:
-        patient_data.drop(columns=['Unnamed: 0'], inplace=True)
-    patients_data[ind] = patient_data
-    patient.options = patient.options + [ind]
-    # patient.value = ind/
-
-    ind = "38"
-    if 'Unnamed: 0' in patient_data2.columns:
-        patient_data2.drop(columns=['Unnamed: 0'], inplace=True)
-    patients_data[ind] = patient_data2
-    patient.options = patient.options + [ind]
-    # patient.value = ind
-
-    # layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
     x.options = df_viz.columns.tolist()
     x.value = 'x'
     y.options = df_viz.columns.tolist()
@@ -365,6 +343,86 @@ def load_test_data():
     size.options = ['None'] + df_viz.columns.tolist()
     size.value = 'None'
 
+##################################################################### edges
+    filename = 'edges.csv'
+    df = pd.read_csv(join(dirname(__file__), 'data/edges.csv'))
+
+    tree['edges'] = df
+    tree_dropdown.menu[1] = ("edges ok (" + filename + ")", 'edges')
+    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+
+    # if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in tree_dropdown.menu]):
+    tree_dropdown.button_type = "success"
+
+##################################################################### patients
+    pat_list = [
+        'pBM-36-sort-CD15-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 62 .csv',
+        'pBM-36-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 63 .csv',
+        'pBM-38-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 191 .csv',
+        'pBM-38-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 192 .csv',
+        'pBM-39-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 193 .csv',
+        'pBM-39-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 194 .csv',
+        'pBM-41-sort-CD15-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 195 .csv',
+        'pBM-41-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 196 .csv',
+        'pBM-43-sort-CD15-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 197 .csv',
+        'pBM-43-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 198 .csv',
+        'pBM-48-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 199 .csv',
+        'pBM-48-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 200 .csv',
+        'pBM-49-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 201 .csv',
+        'pBM-49-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 202 .csv',
+        'hBM-1n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 1 .csv',
+        'hBM-1n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 2 .csv',
+        'hBM-1n-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 3 .csv',
+        'hBM-1n-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 4 .csv',
+        'hBM-2n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 5 .csv',
+        'hBM-2n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 6 .csv',
+        'hBM-2n-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 7 .csv',
+        'hBM-2n-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 8 .csv',
+        'hBM-3n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 9 .csv',
+        'hBM-3n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 10 .csv',
+        'hBM-4n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 11 .csv',
+        'hBM-4n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 12 .csv',
+        'hBM-5n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 13 .csv',
+        'hBM-5n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 14 .csv',
+    ]
+    for p in pat_list:
+        filename = p
+        df = pd.read_csv(join(dirname(__file__), 'data/' + filename))
+        ind = filename.split(".")[0]
+        if 'Unnamed: 0' in df.columns:  # TODO drop all Unnamed
+            df.drop(columns=['Unnamed: 0'], inplace=True)
+        patients_data[ind] = df
+        patient.options = patient.options + [ind]
+        patient.value = ind
+    upload_patients.button_type = 'success'
+
+##################################################################### populations
+
+    file_io = open(join(dirname(__file__), 'data/populations.txt'), "r")
+    text = list(iter(file_io.read().splitlines()))
+    print(text)
+    df_viz['populationID'] = -1
+    populations = pd.DataFrame()
+    for line in text:
+        if line != "":
+            split_line = line.split(":")
+            pop_name = split_line[0]
+
+            populations = populations.append({'population_name': pop_name,
+                                              'color': population_colors.loc[len(populations), 'color_name']},
+                                             ignore_index=True)
+            pop_list.menu.append((pop_name, str(len(populations) - 1)))
+
+            indices = [int(a) for a in split_line[1].split(",")]
+
+            df_viz.loc[indices, 'populationID'] = len(populations) - 1
+            patches = {
+                'populationID': [(i, len(populations) - 1) for i in indices]
+            }
+            source.patch(patches)
+            bubble_name.value = ""
+
+    upload_populations.button_type = 'success'
     layout.children[1] = create_figure(df_viz, tree['edges'], populations)
 
 
@@ -412,7 +470,8 @@ def select_patient(attr, old, new):
                 (df_viz.columns.tolist()[0] if 'ID' not in df_viz.columns.tolist()[0] else df_viz.columns.tolist()[1])
             y.options = df_viz.columns.tolist()
             y.value = 'y' if 'y' in df_viz.columns.tolist() else \
-                (df_viz.columns.tolist()[-1] if 'ID' not in df_viz.columns.tolist()[-1] else df_viz.columns.tolist()[-2])
+                (df_viz.columns.tolist()[-1] if 'ID' not in df_viz.columns.tolist()[-1] else df_viz.columns.tolist()[
+                    -2])
             color.options = ['None'] + df_viz.columns.tolist()
             color.value = 'None'
             size.options = ['None'] + df_viz.columns.tolist()
@@ -435,7 +494,7 @@ def check_selection(attr, old, new):
         bubble_select.disabled = True
 
 
-def create_stats_tables():          # TODO remove error, if running without coordinates data
+def create_stats_tables():  # TODO remove error, if running without coordinates data
     global df_stats
     # create empty dataframe with multiindex
     bubbles = populations['population_name'].values
@@ -451,20 +510,24 @@ def create_stats_tables():          # TODO remove error, if running without coor
 
         # select column with cell count
         # TODO better condition to filter columns and find cell count
-        int_cols = list(filter(lambda a: (not "id" in a.lower()) and df_patient[a].nunique() > 2,
-                               df_patient.loc[:, df_patient.dtypes == np.int64].columns))
-        # print(pat, int_cols)
+        print(df_patient)
+        print(df_patient['cells'].values.dtype)
+        int_cols = list(filter(
+            lambda a: (not "id" in a.lower()) and df_patient[a].nunique() > 2 and ('int' in df_patient[a].values.dtype),
+            df_patient.columns))
+        print(pat, int_cols)
         if len(int_cols) > 1:
-            print("ERROR")      # TODO error message
+            print("ERROR")  # TODO error message
         else:
             cell_count_column = int_cols[0]
+            print(cell_count_column)
             cell_sum = df_patient[cell_count_column].sum()
             # print(cell_sum)
             for idx_b, b in enumerate(bubbles):
                 clusters = df_patient[df_viz['populationID'] == idx_b]
                 for idx_m, m in enumerate(markers):
                     if m != cell_count_column and m in clusters.columns:
-                        values = map(lambda a, count: a*clusters.loc[count, cell_count_column],
+                        values = map(lambda a, count: a * clusters.loc[count, cell_count_column],
                                      clusters[m].dropna(), clusters[m].index.values)
                         df_stats.loc[(b, m), pat] = reduce(lambda p, q: p + q, list(values), 0) / cell_sum
                     else:
@@ -496,10 +559,10 @@ def correlation_plot():
             df[pat] = patients_data[pat][marker.value] if marker.value in patients_data[pat].columns else np.NaN
 
         df.columns = patients_list
-        print(df)
+        # print(df)
 
         df = pd.DataFrame(df.corr().stack(), columns=['rate']).reset_index()
-        print(df)
+        # print(df)
 
         mapper = LinearColorMapper(palette=hf.create_color_map(),
                                    high=1,
@@ -617,10 +680,10 @@ def rename_tab(text_input):
     text_input.value = ""
     new_tabs = Tabs(tabs=groups_tabs.tabs, active=groups_tabs.active)
     groups_tabs = new_tabs
-    layout2.children[2].children[1] = new_tabs       # TODO time complexity???
+    layout2.children[2].children[1] = new_tabs  # TODO time complexity???
 
 
-def create_panel(group_number=0):       # TODO css classes
+def create_panel(group_number=0):  # TODO css classes
     remove_group_button = Button(label='remove group', width=100, button_type="danger")
     remove_group_button.on_click(remove_group)
     group_name = TextInput(placeholder="rename group", width=150, css_classes=['renameGroupTextInput'])
@@ -675,20 +738,20 @@ def select_columns(attr, old, new, select_2):
 
 def select_values(attr, old, new, select_1, new_tab):
     if new != 'None':
-        if clinical_data[select_1.value][new].values.dtype == 'object':     # categorical data
+        if clinical_data[select_1.value][new].values.dtype == 'object':  # categorical data
             level_3 = MultiSelect(title='value', value=['None'], options=['None'], width=200)
             try:
                 # print("1  ", clinical_data[select_1.value][new].values.dtype)
                 level_3.options = np.unique(clinical_data[select_1.value][new].iloc[:, 0].dropna().values).tolist()
                 level_3.value = [level_3.options[0]]
-            except TypeError:   # TODO filter non categorical data
+            except TypeError:  # TODO filter non categorical data
                 level_3.options = np.unique(
                     [str(obj) for obj in clinical_data[select_1.value][new].iloc[:, 0].dropna().values]).tolist()
             finally:
                 new_tab.child.children[0].children[0].children[3].disabled = False
                 new_tab.child.children[0].children[0].children[2] = column(level_3)
 
-        elif 'datetime' in str(clinical_data[select_1.value][new].values.dtype):       # datetime data
+        elif 'datetime' in str(clinical_data[select_1.value][new].values.dtype):  # datetime data
             start = clinical_data[select_1.value][new].min().dt.date.item()
             end = clinical_data[select_1.value][new].max().dt.date.item()
             date_slider = DateRangeSlider(title="",
@@ -713,7 +776,7 @@ def select_values(attr, old, new, select_1, new_tab):
             new_tab.child.children[0].children[0].children[2] = column(slider, checkbox_group)
 
         else:
-            print("Something went wrong, unexpected datatype by clinical data value selecting")   # TODO error message?
+            print("Something went wrong, unexpected datatype by clinical data value selecting")  # TODO error message?
 
     else:
         new_tab.child.children[0].children[0].children[2] = \
@@ -754,7 +817,7 @@ def add_value_to_filter(new_tab):
             else:
                 i = df[df.columns[0]][(df[df.columns[0]] > pd.Timestamp(start))
                                       & (df[df.columns[0]] < pd.Timestamp(end))].index
-        else:       # if number
+        else:  # if number
             start = level_3[0].value[0]
             end = level_3[0].value[1]
             if invert:
@@ -794,7 +857,7 @@ def add_value_to_filter(new_tab):
     # print()
 
 
-def write_conditions(conditions, group_size, tag="li"):     # TODO drop empty conditions
+def write_conditions(conditions, group_size, tag="li"):  # TODO drop empty conditions
     # conditions_text = "<h4>Group size: " + str(group_size) + "</h4><h3>conditions:</h3><ul>"
     conditions_text = "<h3>conditions:</h3><ul>"
 
@@ -830,6 +893,10 @@ def map_measurements_to_patients():
 def active_tab(attr, old, new):
     if old == 0 and new == 1:
         create_stats_tables()
+    if new == 2:
+        print(df_stats.loc[('asd', 'cells'), :])
+        layout3.children[0] = boxplot.create_boxplot()
+
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view
 
@@ -963,9 +1030,12 @@ tab2 = Panel(child=layout2, title="group selection view")
 
 c = Button(label="under development")
 
-tab3 = Panel(child=boxplot.create_boxplot(), title="statistics view")
+layout3 = row(boxplot.create_boxplot())
+
+tab3 = Panel(child=layout3, title="statistics view")
 
 # FINAL LAYOUT ------------------------------------------------------------------------------------- FINAL LAYOUT
+load_test_data()
 
 tabs = Tabs(tabs=[tab1, tab2, tab3])
 tabs.on_change('active', active_tab)

@@ -15,9 +15,9 @@ def create_boxplot(groups=[]):
     df = pd.DataFrame(dict(score=yy, group=g))
 
     # find the quartiles and IQR for each category
-    print(df)
+    # print(df)
     groups = df.groupby('group')
-    print(groups)
+    # print(groups)
     q1 = groups.quantile(q=0.25)
     q2 = groups.quantile(q=0.5)
     q3 = groups.quantile(q=0.75)
