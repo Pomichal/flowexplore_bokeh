@@ -521,6 +521,19 @@ def update_correlation_plot(attr, old, new):
     layout2.children[1] = correlation_plot()
 
 
+def remove_measurements():
+    print("ujujujujujuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu")
+    # print(tab_no)
+    group_no = groups_tabs.active
+    indices = groups_tabs.tabs[groups_tabs.active].child.children[2].children[0].source.selected.indices
+    # print(groups[groups_tabs.active][1].index)
+    # print(groups[groups_tabs.active][1].index[indices])
+    # print(groups[groups_tabs.active][1].drop(groups[groups_tabs.active][1].index[indices]))
+    # groups[groups_tabs.active][1] = groups[groups_tabs.active][1].drop(groups[groups_tabs.active][1].index[indices])
+    groups[groups_tabs.active][1].drop(groups[groups_tabs.active][1].index[indices], inplace=True)
+    groups_tabs.tabs[group_no].child.children[2].children[0].source = ColumnDataSource(groups[group_no][1])
+
+
 def add_group():
     group_number = len(groups_tabs.tabs)
     groups.append([{}, pd.DataFrame(map_measurements_to_patients(), columns=['measurements', 'patient'])])
@@ -569,17 +582,20 @@ def create_panel(group_number=0):       # TODO css classes
         add_filter = Button(label='add condition', disabled=True, width=200)
         level_1.on_change('value', partial(select_columns, select_2=level_2))
         categories = Div(text="""""")
-        # remove_measurement = Button(label="remov)
+        remove_measurement = Button(label="remove measuremt(s)", button_type='danger')
+        remove_measurement.on_click(remove_measurements)
         groups[group_number][1] = map_measurements_to_patients()
-
+        # groups[group_number][1].on_change('selected', enable_remove_button)
         new_columns = [
             TableColumn(field='measurements', title='measurements'),
             TableColumn(field='patient', title='patient')
         ]
         patient_table = DataTable(source=ColumnDataSource(groups[group_number][1]),
                                   columns=new_columns, width=400, height=850, reorderable=True)
+        # patient_table.source.selected.on_change('indices', partial(enable_remove_button, tab_no=group_number))
         filter_box = widgetbox([level_1, level_2, level_3, add_filter], css_classes=['full-border'])
-        new_tab = Panel(child=column(row(filter_box, edit_box), categories,patient_table),
+        new_tab = Panel(child=column(row(filter_box, edit_box), categories,
+                                     row(patient_table, remove_measurement)),
                         title="group " + str(group_number))
         level_2.on_change('value', partial(select_values, select_1=level_1, new_tab=new_tab))
         add_filter.on_click(partial(add_value_to_filter, new_tab=new_tab))
@@ -693,7 +709,7 @@ def add_value_to_filter(new_tab):
         groups[group_no][1] = new_df
         # print("GGG", new_df)
         # print("#######################################################")
-        new_tab.child.children[2].source = ColumnDataSource(groups[group_no][1])
+        new_tab.child.children[2].children[0].source = ColumnDataSource(groups[group_no][1])
     else:
         categories = level_3[0].value
         if level_1 in groups[group_no][0].keys():
@@ -737,7 +753,7 @@ def map_measurements_to_patients():
             new_df = new_df.append(df)
     # print(new_df)
     # print("#############################################################################")
-    return new_df
+    return new_df.reset_index(drop=True)
 
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view
