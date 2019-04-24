@@ -569,7 +569,9 @@ def create_panel(group_number=0):       # TODO css classes
         add_filter = Button(label='add condition', disabled=True, width=200)
         level_1.on_change('value', partial(select_columns, select_2=level_2))
         categories = Div(text="""""")
+        # remove_measurement = Button(label="remov)
         groups[group_number][1] = map_measurements_to_patients()
+
         new_columns = [
             TableColumn(field='measurements', title='measurements'),
             TableColumn(field='patient', title='patient')
@@ -689,8 +691,8 @@ def add_value_to_filter(new_tab):
                 df = pd.DataFrame([[val, k]], columns=['measurements', 'patient'])
                 new_df = new_df.append(df)
         groups[group_no][1] = new_df
-        print("GGG", new_df)
-        print("#######################################################")
+        # print("GGG", new_df)
+        # print("#######################################################")
         new_tab.child.children[2].source = ColumnDataSource(groups[group_no][1])
     else:
         categories = level_3[0].value
