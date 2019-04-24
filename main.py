@@ -522,7 +522,7 @@ def update_correlation_plot(attr, old, new):
 
 
 def remove_measurements():
-    print("ujujujujujuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu")
+    # print("ujujujujujuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu")
     # print(tab_no)
     group_no = groups_tabs.active
     indices = groups_tabs.tabs[groups_tabs.active].child.children[2].children[0].source.selected.indices
@@ -582,7 +582,7 @@ def create_panel(group_number=0):       # TODO css classes
         add_filter = Button(label='add condition', disabled=True, width=200)
         level_1.on_change('value', partial(select_columns, select_2=level_2))
         categories = Div(text="""""")
-        remove_measurement = Button(label="remove measuremt(s)", button_type='danger')
+        remove_measurement = Button(label="remove measuremt(s)", button_type='danger', width=200)
         remove_measurement.on_click(remove_measurements)
         groups[group_number][1] = map_measurements_to_patients()
         # groups[group_number][1].on_change('selected', enable_remove_button)
@@ -680,43 +680,52 @@ def add_value_to_filter(new_tab):
     level_3 = new_tab.child.children[0].children[0].children[2].children
     group_no = groups_tabs.active
     # print("old", groups)
+    df = clinical_data[level_1][level_2]
     if len(level_3) == 2:
+        invert = len(level_3[1].active) == 1
+
         if 'datetime' in str(clinical_data[level_1][level_2].values.dtype):
             start = level_3[0].value_as_date[0]
             end = level_3[0].value_as_date[1]
-        else:
+            if invert:
+                i = df[df.columns[0]][(df[df.columns[0]] < pd.Timestamp(start))
+                                      | (df[df.columns[0]] > pd.Timestamp(end))].index
+            else:
+                i = df[df.columns[0]][(df[df.columns[0]] > pd.Timestamp(start))
+                                      & (df[df.columns[0]] < pd.Timestamp(end))].index
+        else:       # if number
             start = level_3[0].value[0]
             end = level_3[0].value[1]
-        invert = len(level_3[1].active) == 1
+            if invert:
+                i = df[df.columns[0]][(df[df.columns[0]] < start)
+                                      | (df[df.columns[0]] > end)].index
+            else:
+                i = df[df.columns[0]][(df[df.columns[0]] > start)
+                                      & (df[df.columns[0]] < end)].index
+
         if level_1 not in groups[group_no][0].keys():
             groups[group_no][0][level_1] = {}
         groups[group_no][0][level_1][level_2] = (invert, start, end)
 
-        df = clinical_data[level_1][level_2]
-        if invert:
-            i = df[df.columns[0]][(df[df.columns[0]] < pd.Timestamp(start))
-                                  | (df[df.columns[0]] > pd.Timestamp(end))].index
-        else:
-            i = df[df.columns[0]][(df[df.columns[0]] > pd.Timestamp(start))
-                              & (df[df.columns[0]] < pd.Timestamp(end))].index
-
-        measurements = find_measurements(i)
-        new_df = pd.DataFrame(columns=['measurements', 'patient'])
-        for k, v in measurements.items():
-            for val in v:
-                df = pd.DataFrame([[val, k]], columns=['measurements', 'patient'])
-                new_df = new_df.append(df)
-        groups[group_no][1] = new_df
-        # print("GGG", new_df)
-        # print("#######################################################")
-        new_tab.child.children[2].children[0].source = ColumnDataSource(groups[group_no][1])
     else:
         categories = level_3[0].value
+        i = df[df.columns[0]][df[df.columns[0]].isin(categories)].index
         if level_1 in groups[group_no][0].keys():
             groups[group_no][0][level_1][level_2] = categories
         else:
             groups[group_no][0][level_1] = {}
             groups[group_no][0][level_1][level_2] = categories
+
+    measurements = find_measurements(i)
+    new_df = pd.DataFrame(columns=['measurements', 'patient'])
+    for k, v in measurements.items():
+        for val in v:
+            df = pd.DataFrame([[val, k]], columns=['measurements', 'patient'])
+            new_df = new_df.append(df)
+    groups[group_no][1] = new_df.reset_index(drop=True)
+    # print("GGG", new_df)
+    # print("#######################################################")
+    new_tab.child.children[2].children[0].source = ColumnDataSource(groups[group_no][1])
 
     new_tab.child.children[1].text = write_conditions(groups[group_no][0])
     # print("new", groups)
