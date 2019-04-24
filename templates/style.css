@@ -55,3 +55,7 @@ body {
 .bk-root .bk-widget select{
     width: 180px !important;
 }
+
+.merge-button{
+    margin-top: 40px;
+}

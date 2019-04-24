@@ -16,6 +16,7 @@ from io import StringIO, BytesIO
 import base64
 
 from help_functions import help_functions as hf
+from help_functions import boxplot
 
 file_source_tree = ColumnDataSource({'file_contents': [], 'file_name': []})
 
@@ -495,8 +496,10 @@ def correlation_plot():
             df[pat] = patients_data[pat][marker.value] if marker.value in patients_data[pat].columns else np.NaN
 
         df.columns = patients_list
+        print(df)
+
         df = pd.DataFrame(df.corr().stack(), columns=['rate']).reset_index()
-        # print(df)
+        print(df)
 
         mapper = LinearColorMapper(palette=hf.create_color_map(),
                                    high=1,
@@ -554,7 +557,7 @@ def create_reference_group_tab():
     remove_measurement = Button(label="remove measuremt(s)", button_type='danger', width=200)
     remove_measurement.on_click(remove_measurements)
     groups.append([{}, pd.DataFrame(map_measurements_to_patients(), columns=['measurements', 'patient'])])
-    groups[group_number][1] = find_healthy()    # TODO change to healthy
+    groups[group_number][1] = find_healthy()
     # groups[group_number][1].on_change('selected', enable_remove_button)
     new_columns = [
         TableColumn(field='measurements', title='measurements'),
@@ -594,8 +597,13 @@ def add_group():
 
 
 def remove_group():
+    global merge
     groups_tabs.tabs.pop(groups_tabs.active)
     groups.pop(groups_tabs.active)
+    # print(merge.options.pop(groups_tabs.active + 1))
+    # li = merge.options                                        # TODO merge
+    # del li[groups_tabs.active + 1]
+    # merge.options = li
 
 
 def hold(attr, old, new):  # TODO add callback after pointDrawTool action
@@ -626,6 +634,7 @@ def create_panel(group_number=0):       # TODO css classes
         new_tab = Panel(child=level_3, title="group " + str(group_number))
 
     else:
+        # merge.options = merge.options + ["group " + str(group_number)]            # TODO merge
         level_1 = Select(title='category', value='None', width=200,
                          # css_classes=['select-width'],
                          options=['None'] + clinical_data.columns.get_level_values(0).unique().tolist())
@@ -779,13 +788,14 @@ def add_value_to_filter(new_tab):
     # print("#######################################################")
     new_tab.child.children[2].children[0].source = ColumnDataSource(groups[group_no][1])
 
-    new_tab.child.children[1].text = write_conditions(groups[group_no][0])
+    new_tab.child.children[1].text = write_conditions(groups[group_no][0], groups[group_no][1].shape[0])
     # print("new", groups)
     # print(write_conditions(groups[group_no]))
     # print()
 
 
-def write_conditions(conditions, tag="li"):     # TODO drop empty conditions
+def write_conditions(conditions, group_size, tag="li"):     # TODO drop empty conditions
+    # conditions_text = "<h4>Group size: " + str(group_size) + "</h4><h3>conditions:</h3><ul>"
     conditions_text = "<h3>conditions:</h3><ul>"
 
     for k, v in conditions.items():
@@ -816,6 +826,10 @@ def map_measurements_to_patients():
     # print("#############################################################################")
     return new_df.reset_index(drop=True)
 
+
+def active_tab(attr, old, new):
+    if old == 0 and new == 1:
+        create_stats_tables()
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view
 
@@ -909,12 +923,14 @@ tab1 = Panel(child=layout, title="population view")
 
 # TAB2 group selection ----------------------------------------------------------------------- TAB2 group selection
 
-create_bubble_stats = Button(label="create tables for statistics")
-create_bubble_stats.on_click(create_stats_tables)
+# create_bubble_stats = Button(label="create tables for statistics")
+# create_bubble_stats.on_click(create_stats_tables)
 marker = Select(title='Marker', value='None', options=['None'])
 marker.on_change('value', update_correlation_plot)
 
-basic_overview = widgetbox([create_bubble_stats, marker], width=200)
+basic_overview = widgetbox([
+    # create_bubble_stats,
+    marker], width=200)
 
 add_group_button = Button(label='Add new group', width=200, disabled=True)
 add_group_button.on_click(add_group)
@@ -926,15 +942,19 @@ upload_clinical_data = Button(label='upload clinical data', width=200)
 upload_clinical_data.js_on_click(CustomJS(args=dict(file_source=file_source_clinical),
                                           code=open(join(dirname(__file__), "static/js/upload.js")).read()))
 
-group1 = create_panel(
-)
+# merge = Select(title='Merge current group with:', value='None', options=['None'], width=200)      # TODO merge
+
+group1 = create_panel()
 groups.append([{}, pd.DataFrame(map_measurements_to_patients(), columns=['measurements', 'patient'])])
 
 groups_tabs = Tabs(tabs=[group1])
 groups_tabs.width = 800
 
-layout2 = row(basic_overview, correlation_plot(), column(children=[row(add_group_button, create_ref_group_button,
-                                                                       upload_clinical_data),
+layout2 = row(basic_overview, correlation_plot(), column(children=[column(row(add_group_button,
+                                                                              create_ref_group_button,
+                                                                              upload_clinical_data),
+                                                                          # merge
+                                                                          ),
                                                                    groups_tabs]))
 
 tab2 = Panel(child=layout2, title="group selection view")
@@ -943,10 +963,11 @@ tab2 = Panel(child=layout2, title="group selection view")
 
 c = Button(label="under development")
 
-tab3 = Panel(child=c, title="statistics view")
+tab3 = Panel(child=boxplot.create_boxplot(), title="statistics view")
 
 # FINAL LAYOUT ------------------------------------------------------------------------------------- FINAL LAYOUT
 
 tabs = Tabs(tabs=[tab1, tab2, tab3])
+tabs.on_change('active', active_tab)
 curdoc().add_root(tabs)
 curdoc().title = "Flowexplore"
