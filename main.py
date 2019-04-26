@@ -16,7 +16,7 @@ import base64
 from help_functions import help_functions as hf
 from help_functions import boxplot
 from help_functions import file_upload
-from help_functions import create_figure
+from help_functions import create_figure, manipulate_figure
 
 file_source_tree = ColumnDataSource({'file_contents': [], 'file_name': []})
 
@@ -142,17 +142,12 @@ def update(attr, old, new):
 def create_bubble():
     global populations
     global source
-    # print(populations)
-    populations = populations.append({'population_name': bubble_name.value,
-                                      'color': population_colors.loc[len(populations), 'color_name']},
-                                     ignore_index=True)
+    global df_viz
+
+    df_viz, populations = manipulate_figure.create_bubble(source, populations, bubble_name.value, df_viz)
+
     pop_list.menu.append((bubble_name.value, str(len(populations) - 1)))
-    selected = source.selected.indices
-    df_viz.loc[selected, 'populationID'] = len(populations) - 1
-    patches = {
-        'populationID': [(i, len(populations) - 1) for i in selected]
-    }
-    source.patch(patches)
+
     bubble_name.value = ""
     layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
@@ -265,18 +260,18 @@ def load_test_data():
     layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
 ##################################################################### clinical data
-    #
-    # clinical_data = pd.read_excel(join(dirname(__file__), 'data/PATIENTS DATABASE NEW FINAL to upload.xlsx'),
-    #                               header=[0, 1, 2])
-    #
-    # upload_clinical_data.button_type = 'success'
-    # groups_tabs.tabs[0] = create_panel()
-    # groups[0][1] = map_measurements_to_patients()
-    #
-    # add_group_button.disabled = False
-    # create_ref_group_button.disabled = False
-    # add_group()
-    # create_reference_group_tab()
+
+    clinical_data = pd.read_excel(join(dirname(__file__), 'data/PATIENTS DATABASE NEW FINAL to upload.xlsx'),
+                                  header=[0, 1, 2])
+
+    upload_clinical_data.button_type = 'success'
+    groups_tabs.tabs[0] = create_panel()
+    groups[0][1] = map_measurements_to_patients()
+
+    add_group_button.disabled = False
+    create_ref_group_button.disabled = False
+    add_group()
+    create_reference_group_tab()
 
 
 def select_population():
