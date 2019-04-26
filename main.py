@@ -7,8 +7,6 @@ from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDra
 from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn, NumberFormatter, Panel, Tabs, \
     PreText, DateRangeSlider, RangeSlider, CheckboxGroup, Div, MultiSelect
 from bokeh.models.mappers import LinearColorMapper
-from bokeh.models.graphs import NodesAndLinkedEdges
-# from bokeh.models.selections import Selection
 from bokeh.plotting import curdoc, figure
 from functools import reduce, partial
 from math import pi
@@ -75,36 +73,12 @@ def file_callback_tree(attr, old, new):  # TODO file check
 def file_callback_populations(attr, old, new):  # TODO file check
     global df_viz
     global populations
+    global source
 
-    raw_contents = file_source_populations.data['file_contents'][0]
+    df_viz, populations, source = file_upload.file_callback_populations(file_source_populations, df_viz, source)
 
-    # remove the prefix that JS adds
-    prefix, b64_contents = raw_contents.split(",", 1)
-    file_contents = base64.b64decode(b64_contents)
-    file_io = StringIO(bytes.decode(file_contents))
-
-    text = list(iter(file_io.getvalue().splitlines()))
-    df_viz['populationID'] = -1
-    populations = pd.DataFrame()
-    for line in text:
-        if line != "":
-            split_line = line.split(":")
-            pop_name = split_line[0]
-
-            populations = populations.append({'population_name': pop_name,
-                                              'color': population_colors.loc[len(populations), 'color_name']},
-                                             ignore_index=True)
-            pop_list.menu.append((pop_name, str(len(populations) - 1)))
-
-            indices = [int(a) for a in split_line[1].split(",")]
-
-            df_viz.loc[indices, 'populationID'] = len(populations) - 1
-            patches = {
-                'populationID': [(i, len(populations) - 1) for i in indices]
-            }
-            source.patch(patches)
-            bubble_name.value = ""
-
+    pop_list.menu = [('None', 'None')] + [(name, str(index))
+                                          for index, name in enumerate(populations['population_name'])]
     upload_populations.button_type = 'success'
     layout.children[1] = create_figure(df_viz, tree['edges'], populations)
 

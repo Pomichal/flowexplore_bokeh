@@ -1,7 +1,9 @@
 from io import StringIO, BytesIO
 import base64
 import pandas as pd
-from bokeh.models import ColumnDataSource
+from os.path import join, dirname
+
+population_colors = pd.read_csv(join(dirname(__file__), '../data/colors.csv'))  # TODO add more colors
 
 
 def extract_file(file_source):
@@ -28,6 +30,31 @@ def file_callback_tree(file_source, dropdown_value, df_viz, tree, source):  # TO
 
     elif dropdown_value == 'edges':
         tree['edges'] = df
-    else:
-        print("something went wrong, unknown dropdown value")  # TODO error message?
+
     return df_viz, tree
+
+
+def file_callback_populations(file_source, df_viz, source):  # TODO file check
+
+    file_io, filename = extract_file(file_source)
+
+    text = list(iter(file_io.getvalue().splitlines()))
+    df_viz['populationID'] = -1
+    populations = pd.DataFrame()
+    for line in text:
+        if line != "":
+            split_line = line.split(":")
+            pop_name = split_line[0]
+
+            populations = populations.append({'population_name': pop_name,
+                                              'color': population_colors.loc[len(populations), 'color_name']},
+                                             ignore_index=True)
+            indices = [int(a) for a in split_line[1].split(",")]
+
+            df_viz.loc[indices, 'populationID'] = len(populations) - 1
+            patches = {
+                'populationID': [(i, len(populations) - 1) for i in indices]
+            }
+            source.patch(patches)
+
+    return df_viz, populations, source
