@@ -16,6 +16,7 @@ import base64
 from help_functions import help_functions as hf
 from help_functions import boxplot
 from help_functions import file_upload
+from help_functions import create_figure
 
 file_source_tree = ColumnDataSource({'file_contents': [], 'file_name': []})
 
@@ -65,7 +66,7 @@ def file_callback_tree(attr, old, new):  # TODO file check
     else:
         print("something went wrong, unknown dropdown value")  # TODO error message?
 
-    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
     if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in tree_dropdown.menu]):
         tree_dropdown.button_type = "success"
 
@@ -80,7 +81,7 @@ def file_callback_populations(attr, old, new):  # TODO file check
     pop_list.menu = [('None', 'None')] + [(name, str(index))
                                           for index, name in enumerate(populations['population_name'])]
     upload_populations.button_type = 'success'
-    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
 
 def file_callback_pat(attr, old, new):  # TODO file check, upload population data
@@ -105,112 +106,11 @@ def file_callback_clinical(attr, old, new):  # TODO file check
     create_ref_group_button.disabled = False
 
 
-def create_figure(df, df_edges, df_populations):
+def draw_figure(df, df_edges, df_populations):
+
+    fig, new_columns = create_figure.create_figure(df, df_edges, df_populations, source, x.value, y.value, color.value, size.value)
     if not df.empty:
 
-        pop_names = [populations.iloc[pop_id]['population_name'] if pop_id != -1 else '???'
-                     for pop_id in df['populationID']]
-        source.add(pop_names, name='pop_names')
-
-        x_title = x.value.title()
-        y_title = y.value.title()
-
-        kw = dict()
-        kw['title'] = "%s vs %s" % (x_title, y_title)
-
-        p = figure(plot_height=900, plot_width=1200,
-                   tools='pan, box_zoom,reset, wheel_zoom, box_select, tap, save',
-                   toolbar_location="above", **kw)
-        p.add_tools(LassoSelectTool(select_every_mousemove=False))
-
-        p.xaxis.axis_label = x_title
-        p.yaxis.axis_label = y_title
-
-        # add lines
-        # print(source.data['x'][0])
-        if not df_edges.empty:
-            lines_from = []
-            lines_to = []
-            for line in range(0, df_edges.shape[0]):
-                lines_from.append(
-                    [source.data[x.value][df_edges.iloc[line, 1] - 1],  # TODO filter possible nan values
-                     source.data[x.value][df_edges.iloc[line, 2] - 1]])
-                lines_to.append([source.data[y.value][df_edges.iloc[line, 1] - 1],  # TODO filter possible nan values
-                                 source.data[y.value][df_edges.iloc[line, 2] - 1]])
-
-            p.multi_line(lines_from, lines_to, line_width=0.5, color='white')
-            # lines_renderer = p.multi_line(lines_from, lines_to, line_width=0.5, color='white')
-        # else:
-        # lines_renderer = None
-
-        # mark populations
-        line_color = ['white'] * len(df)
-        line_width = [1] * len(df)
-        if not df_populations.empty:
-            line_color = [populations.iloc[pop_id]['color'] if pop_id != -1 else 'white'
-                          for pop_id in df['populationID']]
-            line_width = [5 if lc != 'white' else 1 for lc in line_color]
-
-        source.add(line_color, name='lc')
-        source.add(line_width, name='lw')
-
-        if size.value != 'None':
-            sizes = [hf.scale(value, df[size.value].min(),
-                              df[size.value].max()) if not np.isnan(value) and value != 0 else 10 for value in
-                     df[size.value]]
-        else:
-            sizes = [25 for _ in df[x.value]]
-        source.add(sizes, name='sz')
-
-        if color.value != 'None':
-            mapper = LinearColorMapper(palette=hf.create_color_map(),
-                                       high=df[color.value].max(),
-                                       high_color='red',
-                                       low=df[color.value].min(),
-                                       low_color='blue'
-                                       )
-            color_bar = ColorBar(color_mapper=mapper, location=(0, 0))
-
-            renderer = p.circle(x=x.value, y=y.value, color={'field': color.value, 'transform': mapper},
-                                size='sz',
-                                line_color="lc",
-                                line_width="lw",
-                                line_alpha=0.9,
-                                alpha=0.6, hover_color='white', hover_alpha=0.5, source=source)
-            p.add_layout(color_bar, 'right')
-
-        else:
-            renderer = p.circle(x=x.value, y=y.value, size='sz',
-                                line_color="lc",
-                                line_width="lw",
-                                line_alpha=0.9,
-                                alpha=0.6,
-                                hover_color='white', hover_alpha=0.5,
-                                source=source)
-
-        hover = HoverTool(
-            tooltips=[
-                ("index", "$index"),
-                ("{}".format(size.value), "@{{{}}}".format(size.value)),
-                ("{}".format(color.value), "@{{{}}}".format(color.value)),
-                ("population", "@pop_names"),
-                ("(x,y)", "($x, $y)"),
-            ],
-            renderers=[renderer]
-        )
-
-        p.add_tools(hover)
-        draw_tool = PointDrawTool(renderers=[renderer], add=False)
-        p.add_tools(draw_tool)
-        p.toolbar.active_tap = draw_tool
-
-        new_columns = [
-            TableColumn(field=x.value, title=x.value, formatter=formatter),
-            TableColumn(field=y.value, title=y.value, formatter=formatter),
-            TableColumn(field=color.value, title=color.value, formatter=formatter),
-            TableColumn(field=size.value, title=size.value, formatter=formatter),
-            TableColumn(field='pop_names', title="population"),
-        ]
         data_table.columns = new_columns
         data_table.source = source
 
@@ -232,16 +132,11 @@ def create_figure(df, df_edges, df_populations):
                                                          code=open(join(dirname(__file__),
                                                                         "static/js/download_populations.js")).read())
 
-        return p
-
-    p = figure(plot_height=900, plot_width=1200,
-               tools='pan, box_zoom,reset, wheel_zoom, box_select, lasso_select,tap',
-               toolbar_location="above")
-    return p
+    return fig
 
 
 def update(attr, old, new):
-    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
 
 def create_bubble():
@@ -259,7 +154,7 @@ def create_bubble():
     }
     source.patch(patches)
     bubble_name.value = ""
-    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
 
 def load_test_data():
@@ -278,7 +173,7 @@ def load_test_data():
     df_viz['y'] = tree['coordinates'].iloc[:, 2].values
     df_viz['populationID'] = -1
     source.data = df_viz.to_dict(orient='list')
-    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
     x.options = df_viz.columns.tolist()
     x.value = 'x'
     y.options = df_viz.columns.tolist()
@@ -294,7 +189,7 @@ def load_test_data():
 
     tree['edges'] = df
     tree_dropdown.menu[1] = ("edges ok (" + filename + ")", 'edges')
-    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
     # if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in tree_dropdown.menu]):
     tree_dropdown.button_type = "success"
@@ -367,7 +262,7 @@ def load_test_data():
             bubble_name.value = ""
 
     upload_populations.button_type = 'success'
-    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
 ##################################################################### clinical data
     #
@@ -397,7 +292,7 @@ def add_to_bubble(attr, old, new):
     else:
         df_viz.loc[indices, 'populationID'] = -1
 
-    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
     pop_list.value = 'placeholder'  # TODO find final solution
 
 
@@ -441,7 +336,7 @@ def select_patient(attr, old, new):
         else:
             drop_cols = map(lambda a: a if a not in ['x', 'y', 'populationID'] else None, df_viz.columns.tolist())
             df_viz.drop(columns=filter(lambda v: v is not None, drop_cols), inplace=True)
-    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
 
 def check_selection(attr, old, new):
@@ -971,7 +866,7 @@ formatter = NumberFormatter(format='0.0000')
 data_table = DataTable(source=source, columns=[], width=400, height=850, reorderable=True)
 
 layout = row(column(controls, add_bubble_box, bubble_tools_box, download_tools_box),
-             create_figure(df_viz, tree['edges'], populations),
+             draw_figure(df_viz, tree['edges'], populations),
              data_table)
 
 tab1 = Panel(child=layout, title="population view")
