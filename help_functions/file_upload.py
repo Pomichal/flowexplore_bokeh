@@ -6,14 +6,14 @@ from os.path import join, dirname
 population_colors = pd.read_csv(join(dirname(__file__), '../data/colors.csv'))  # TODO add more colors
 
 
-def extract_file(file_source):
+def extract_file(file_source, typ='txt'):
     filename = file_source.data['file_name'][0]
     raw_contents = file_source.data['file_contents'][0]
 
     # remove the prefix that JS adds
     prefix, b64_contents = raw_contents.split(",", 1)
     file_contents = base64.b64decode(b64_contents)
-    file_io = StringIO(bytes.decode(file_contents))
+    file_io = StringIO(bytes.decode(file_contents)) if typ == 'txt' else BytesIO(file_contents)
     return file_io, filename
 
 
@@ -68,4 +68,13 @@ def file_callback_pat(file_source):  # TODO file check, upload population data
     if 'Unnamed: 0' in df.columns:  # TODO drop all Unnamed
         df.drop(columns=['Unnamed: 0'], inplace=True)
     return df, name
+
+
+def file_callback_clinical(file_source):  # TODO file check
+
+    file_io, filename = extract_file(file_source, typ='excel')
+
+    clinical_data = pd.read_excel(file_io, header=[0, 1, 2])
+
+    return clinical_data
 

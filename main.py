@@ -95,14 +95,7 @@ def file_callback_pat(attr, old, new):  # TODO file check, upload population dat
 def file_callback_clinical(attr, old, new):  # TODO file check
     global clinical_data
 
-    raw_contents = file_source_clinical.data['file_contents'][0]
-
-    # remove the prefix that JS adds
-    prefix, b64_contents = raw_contents.split(",", 1)
-    file_contents = base64.b64decode(b64_contents)
-    file_io = BytesIO(file_contents)
-
-    clinical_data = pd.read_excel(file_io, header=[0, 1, 2])
+    clinical_data = file_upload.file_callback_clinical(file_source_clinical)
 
     upload_clinical_data.button_type = 'success'
     groups_tabs.tabs[0] = create_panel()
@@ -377,18 +370,18 @@ def load_test_data():
     layout.children[1] = create_figure(df_viz, tree['edges'], populations)
 
 ##################################################################### clinical data
-
-    clinical_data = pd.read_excel(join(dirname(__file__), 'data/PATIENTS DATABASE NEW FINAL to upload.xlsx'),
-                                  header=[0, 1, 2])
-
-    upload_clinical_data.button_type = 'success'
-    groups_tabs.tabs[0] = create_panel()
-    groups[0][1] = map_measurements_to_patients()
-
-    add_group_button.disabled = False
-    create_ref_group_button.disabled = False
-    add_group()
-    create_reference_group_tab()
+    #
+    # clinical_data = pd.read_excel(join(dirname(__file__), 'data/PATIENTS DATABASE NEW FINAL to upload.xlsx'),
+    #                               header=[0, 1, 2])
+    #
+    # upload_clinical_data.button_type = 'success'
+    # groups_tabs.tabs[0] = create_panel()
+    # groups[0][1] = map_measurements_to_patients()
+    #
+    # add_group_button.disabled = False
+    # create_ref_group_button.disabled = False
+    # add_group()
+    # create_reference_group_tab()
 
 
 def select_population():
@@ -1036,7 +1029,7 @@ layout3 = row(column(bubbles, markers), boxplot.create_boxplot())
 tab3 = Panel(child=layout3, title="statistics view")
 
 # FINAL LAYOUT ------------------------------------------------------------------------------------- FINAL LAYOUT
-# load_test_data()
+load_test_data()
 
 tabs = Tabs(tabs=[tab1, tab2, tab3])
 tabs.on_change('active', active_tab)
