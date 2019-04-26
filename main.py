@@ -84,24 +84,11 @@ def file_callback_populations(attr, old, new):  # TODO file check
 
 
 def file_callback_pat(attr, old, new):  # TODO file check, upload population data
-    global df_viz
-    global source
-    global populations
 
-    filename = file_source_patient.data['file_name'][-1]
-    raw_contents = file_source_patient.data['file_contents'][-1]
-
-    # remove the prefix that JS adds
-    prefix, b64_contents = raw_contents.split(",", 1)
-    file_contents = base64.b64decode(b64_contents)
-    file_io = StringIO(bytes.decode(file_contents))
-    df = pd.read_csv(file_io)
-    ind = filename.split(".")[0]
-    if 'Unnamed: 0' in df.columns:  # TODO drop all Unnamed
-        df.drop(columns=['Unnamed: 0'], inplace=True)
-    patients_data[ind] = df
-    patient.options = patient.options + [ind]
-    patient.value = ind
+    df, name = file_upload.file_callback_pat(file_source_patient)
+    patients_data[name] = df
+    patient.options = patient.options + [name]
+    patient.value = name
     upload_patients.button_type = 'success'
 
 

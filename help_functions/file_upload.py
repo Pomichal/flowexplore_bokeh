@@ -17,44 +17,55 @@ def extract_file(file_source):
     return file_io, filename
 
 
-def file_callback_tree(file_source, dropdown_value, df_viz, tree, source):  # TODO file check
+def file_callback_tree(file_source, dropdown_value, viz_df, tree, main_source):  # TODO file check
 
     file_io, filename = extract_file(file_source)
     df = pd.read_csv(file_io)
     if dropdown_value == 'coordinates':
         tree['coordinates'] = df
-        df_viz['x'] = tree['coordinates'].iloc[:, 1].values
-        df_viz['y'] = tree['coordinates'].iloc[:, 2].values
-        df_viz['populationID'] = -1
-        source.data = df_viz.to_dict(orient='list')
+        viz_df['x'] = tree['coordinates'].iloc[:, 1].values
+        viz_df['y'] = tree['coordinates'].iloc[:, 2].values
+        viz_df['populationID'] = -1
+        main_source.data = viz_df.to_dict(orient='list')
 
     elif dropdown_value == 'edges':
         tree['edges'] = df
 
-    return df_viz, tree
+    return viz_df, tree
 
 
-def file_callback_populations(file_source, df_viz, source):  # TODO file check
+def file_callback_populations(file_source, viz_df, main_source):  # TODO file check
 
     file_io, filename = extract_file(file_source)
 
     text = list(iter(file_io.getvalue().splitlines()))
-    df_viz['populationID'] = -1
-    populations = pd.DataFrame()
+    viz_df['populationID'] = -1
+    pops = pd.DataFrame()
     for line in text:
         if line != "":
             split_line = line.split(":")
             pop_name = split_line[0]
 
-            populations = populations.append({'population_name': pop_name,
-                                              'color': population_colors.loc[len(populations), 'color_name']},
-                                             ignore_index=True)
+            pops = pops.append({'population_name': pop_name,
+                                'color': population_colors.loc[len(populations), 'color_name']},
+                               ignore_index=True)
             indices = [int(a) for a in split_line[1].split(",")]
 
-            df_viz.loc[indices, 'populationID'] = len(populations) - 1
+            viz_df.loc[indices, 'populationID'] = len(pops) - 1
             patches = {
-                'populationID': [(i, len(populations) - 1) for i in indices]
+                'populationID': [(i, len(pops) - 1) for i in indices]
             }
-            source.patch(patches)
+            main_source.patch(patches)
 
-    return df_viz, populations, source
+    return viz_df, pops, main_source
+
+
+def file_callback_pat(file_source):  # TODO file check, upload population data
+
+    file_io, filename = extract_file(file_source)
+    df = pd.read_csv(file_io)
+    name = filename.split(".")[0]
+    if 'Unnamed: 0' in df.columns:  # TODO drop all Unnamed
+        df.drop(columns=['Unnamed: 0'], inplace=True)
+    return df, name
+
