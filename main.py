@@ -17,6 +17,7 @@ import base64
 
 from help_functions import help_functions as hf
 from help_functions import boxplot
+from help_functions import file_upload
 
 file_source_tree = ColumnDataSource({'file_contents': [], 'file_name': []})
 
@@ -46,23 +47,12 @@ groups = []  # conditions for groups of patients
 def file_callback_tree(attr, old, new):  # TODO file check
     global df_viz
     global source
+    global tree
 
-    filename = file_source_tree.data['file_name'][0]
-    raw_contents = file_source_tree.data['file_contents'][0]
+    df_viz, tree = file_upload.file_callback_tree(file_source_tree, tree_dropdown.value, df_viz, tree, source)
 
-    # remove the prefix that JS adds
-    prefix, b64_contents = raw_contents.split(",", 1)
-    file_contents = base64.b64decode(b64_contents)
-    file_io = StringIO(bytes.decode(file_contents))
-    df = pd.read_csv(file_io)
     if tree_dropdown.value == 'coordinates':
-        tree['coordinates'] = df
-        tree_dropdown.menu[0] = ("coordinates ok (" + filename + ")", 'coordinates')
-        df_viz['x'] = tree['coordinates'].iloc[:, 1].values
-        df_viz['y'] = tree['coordinates'].iloc[:, 2].values
-        df_viz['populationID'] = -1
-        source.data = df_viz.to_dict(orient='list')
-        layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+        tree_dropdown.menu[0] = ("coordinates ok (" + file_source_tree.data['file_name'][0] + ")", 'coordinates')
         x.options = df_viz.columns.tolist()
         x.value = 'x'
         y.options = df_viz.columns.tolist()
@@ -73,11 +63,11 @@ def file_callback_tree(attr, old, new):  # TODO file check
         size.value = 'None'
 
     elif tree_dropdown.value == 'edges':
-        tree['edges'] = df
-        tree_dropdown.menu[1] = ("edges ok (" + filename + ")", 'edges')
-        layout.children[1] = create_figure(df_viz, tree['edges'], populations)
+        tree_dropdown.menu[1] = ("edges ok (" + file_source_tree.data['file_name'][0] + ")", 'edges')
     else:
         print("something went wrong, unknown dropdown value")  # TODO error message?
+
+    layout.children[1] = create_figure(df_viz, tree['edges'], populations)
     if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in tree_dropdown.menu]):
         tree_dropdown.button_type = "success"
 
@@ -511,13 +501,16 @@ def check_selection(attr, old, new):
 def create_stats_tables():  # TODO remove error, if running without coordinates data
     global df_stats
     # create empty dataframe with multiindex
-    bubbles = populations['population_name'].values
-    markers = reduce(lambda s, q: s | q, map(lambda p: set(patients_data[p].columns.values), patients_data.keys()))
-    iterables = [bubbles, markers]
+    b = populations['population_name'].values
+    m = reduce(lambda s, q: s | q, map(lambda p: set(patients_data[p].columns.values), patients_data.keys()))
+    iterables = [b, m]
+    print(b, m)
 
     df_stats = pd.DataFrame(index=pd.MultiIndex.from_product(iterables), columns=patients_data.keys())
     # print(df_stats)
-    marker.options = ['None'] + list(markers)
+    marker.options = ['None'] + list(m)
+
+    cell_count_column = 'None'
 
     for pat in patients_data:
         df_patient = patients_data[pat]
@@ -535,17 +528,19 @@ def create_stats_tables():  # TODO remove error, if running without coordinates 
             cell_count_column = int_cols[0]
             # print("THIS IS", cell_count_column)
             cell_sum = df_patient[cell_count_column].sum()
+            print("###############################################", m)
             # print(cell_sum)
-            for idx_b, b in enumerate(bubbles):
+            for idx_b, b in enumerate(b):
                 clusters = df_patient[df_viz['populationID'] == idx_b]
-                for idx_m, m in enumerate(markers):
-                    if m != cell_count_column and m in clusters.columns:
+                for idx_m, ma in enumerate(m):
+                    if ma != cell_count_column and ma in clusters.columns:
                         values = map(lambda a, count: a * clusters.loc[count, cell_count_column],
-                                     clusters[m].dropna(), clusters[m].index.values)
-                        df_stats.loc[(b, m), pat] = reduce(lambda p, q: p + q, list(values), 0) / cell_sum
+                                     clusters[ma].dropna(), clusters[ma].index.values)
+                        df_stats.loc[(b, ma), pat] = reduce(lambda p, q: p + q, list(values), 0) / cell_sum
                     else:
-                        df_stats.loc[(b, m), pat] = reduce(lambda p, q: p + q, clusters[cell_count_column].values)
+                        df_stats.loc[(b, ma), pat] = reduce(lambda p, q: p + q, clusters[cell_count_column].values)
     df_stats = df_stats.astype(float)
+    print(df_stats)
     marker.value = cell_count_column
     # print(df_stats)
 
@@ -911,8 +906,9 @@ def active_tab(attr, old, new):
         stats_df = pd.DataFrame(df_stats.loc[df_stats.index[0], :])
         # print(df_stats.index.get_level_values(0).unique().tolist())
         # print(df_stats.index.get_level_values(1).unique().tolist())
-        bubbles.options = bubbles.options + df_stats.index.get_level_values(0).unique().tolist()
-        markers.options = markers.options + df_stats.index.get_level_values(1).unique().tolist()
+        bubbles.options = ["None"] + df_stats.index.get_level_values(0).unique().tolist()
+        markers.options = ["None"] + df_stats.index.get_level_values(1).unique().tolist()
+        print()
         bubbles.value = bubbles.options[1]
         markers.value = markers.options[1]
         # for i in stats_df.index:
@@ -932,6 +928,7 @@ def draw_boxplot(attr, old, new):
             for group_number, group in enumerate(groups):
                 if i in group[1]['measurements'].tolist():
                     stats_df.loc[i, 'group'] = groups_tabs.tabs[group_number].title
+        print(stats_df)
         layout3.children[1] = boxplot.create_boxplot(stats_df)
 
 
@@ -1067,7 +1064,7 @@ tab2 = Panel(child=layout2, title="group selection view")
 
 c = Button(label="under development")
 
-bubbles = Select(title='Poppulation', value='None', options=['None'])
+bubbles = Select(title='Population', value='None', options=['None'])
 markers = Select(title='Marker', value='None', options=['None'])
 
 bubbles.on_change('value', draw_boxplot)
@@ -1078,7 +1075,7 @@ layout3 = row(column(bubbles, markers), boxplot.create_boxplot())
 tab3 = Panel(child=layout3, title="statistics view")
 
 # FINAL LAYOUT ------------------------------------------------------------------------------------- FINAL LAYOUT
-load_test_data()
+# load_test_data()
 
 tabs = Tabs(tabs=[tab1, tab2, tab3])
 tabs.on_change('active', active_tab)
