@@ -59,9 +59,9 @@ def create_boxplot(df=pd.DataFrame()):
         # print(iqr)
         # print(iqr.iloc[:,0].max())
         # max_iqr = iqr.iloc[:,0].min()
-        # range_y = upper.iloc[:,0].max() - lower.iloc[:,0].min()
-        # p.rect(cats, lower[value], 0.2, range_y/500, line_color="black")
-        # p.rect(cats, upper[value], 0.2, range_y/500, line_color="black")
+        range_y = upper.iloc[:, 0].max() - lower.iloc[:, 0].min()
+        p.rect(cats, lower[value], 0.2, range_y/500, line_color="black")
+        p.rect(cats, upper[value], 0.2, range_y/500, line_color="black")
 
         # outliers
         if not out.empty:

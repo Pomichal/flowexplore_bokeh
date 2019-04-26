@@ -152,128 +152,6 @@ def create_bubble():
     layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
 
-def load_test_data():
-    global df_viz
-    global source
-    global populations
-    global clinical_data
-
-#################################################################### coordinates
-    filename = 'coordinates.csv'
-    df = pd.read_csv(join(dirname(__file__), 'data/coordinates.csv'))
-    # if tree_dropdown.value == 'coordinates':
-    tree['coordinates'] = df
-    tree_dropdown.menu[0] = ("coordinates ok (" + filename + ")", 'coordinates')
-    df_viz['x'] = tree['coordinates'].iloc[:, 1].values
-    df_viz['y'] = tree['coordinates'].iloc[:, 2].values
-    df_viz['populationID'] = -1
-    source.data = df_viz.to_dict(orient='list')
-    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
-    x.options = df_viz.columns.tolist()
-    x.value = 'x'
-    y.options = df_viz.columns.tolist()
-    y.value = 'y'
-    color.options = ['None'] + df_viz.columns.tolist()
-    color.value = 'None'
-    size.options = ['None'] + df_viz.columns.tolist()
-    size.value = 'None'
-
-##################################################################### edges
-    filename = 'edges.csv'
-    df = pd.read_csv(join(dirname(__file__), 'data/edges.csv'))
-
-    tree['edges'] = df
-    tree_dropdown.menu[1] = ("edges ok (" + filename + ")", 'edges')
-    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
-
-    # if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in tree_dropdown.menu]):
-    tree_dropdown.button_type = "success"
-
-##################################################################### patients
-    pat_list = [
-        'pBM-36-sort-CD15-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 62 .csv',
-        'pBM-36-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 63 .csv',
-        'pBM-38-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 191 .csv',
-        'pBM-38-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 192 .csv',
-        'pBM-39-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 193 .csv',
-        'pBM-39-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 194 .csv',
-        'pBM-41-sort-CD15-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 195 .csv',
-        'pBM-41-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 196 .csv',
-        'pBM-43-sort-CD15-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 197 .csv',
-        'pBM-43-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 198 .csv',
-        'pBM-48-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 199 .csv',
-        'pBM-48-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 200 .csv',
-        'pBM-49-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 201 .csv',
-        'pBM-49-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 202 .csv',
-        'hBM-1n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 1 .csv',
-        'hBM-1n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 2 .csv',
-        'hBM-1n-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 3 .csv',
-        'hBM-1n-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 4 .csv',
-        'hBM-2n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 5 .csv',
-        'hBM-2n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 6 .csv',
-        'hBM-2n-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 7 .csv',
-        'hBM-2n-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 8 .csv',
-        'hBM-3n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 9 .csv',
-        'hBM-3n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 10 .csv',
-        'hBM-4n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 11 .csv',
-        'hBM-4n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 12 .csv',
-        'hBM-5n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 13 .csv',
-        'hBM-5n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 14 .csv',
-    ]
-    for p in pat_list:
-        filename = p
-        df = pd.read_csv(join(dirname(__file__), 'data/' + filename))
-        ind = filename.split(".")[0]
-        if 'Unnamed: 0' in df.columns:  # TODO drop all Unnamed
-            df.drop(columns=['Unnamed: 0'], inplace=True)
-        patients_data[ind] = df
-        patient.options = patient.options + [ind]
-        patient.value = ind
-    upload_patients.button_type = 'success'
-
-##################################################################### populations
-
-    file_io = open(join(dirname(__file__), 'data/populations.txt'), "r")
-    text = list(iter(file_io.read().splitlines()))
-    df_viz['populationID'] = -1
-    populations = pd.DataFrame()
-    for line in text:
-        if line != "":
-            split_line = line.split(":")
-            pop_name = split_line[0]
-
-            populations = populations.append({'population_name': pop_name,
-                                              'color': population_colors.loc[len(populations), 'color_name']},
-                                             ignore_index=True)
-            pop_list.menu.append((pop_name, str(len(populations) - 1)))
-
-            indices = [int(a) for a in split_line[1].split(",")]
-
-            df_viz.loc[indices, 'populationID'] = len(populations) - 1
-            patches = {
-                'populationID': [(i, len(populations) - 1) for i in indices]
-            }
-            source.patch(patches)
-            bubble_name.value = ""
-
-    upload_populations.button_type = 'success'
-    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
-
-##################################################################### clinical data
-
-    clinical_data = pd.read_excel(join(dirname(__file__), 'data/PATIENTS DATABASE NEW FINAL to upload.xlsx'),
-                                  header=[0, 1, 2])
-
-    upload_clinical_data.button_type = 'success'
-    groups_tabs.tabs[0] = create_panel()
-    groups[0][1] = map_measurements_to_patients()
-
-    add_group_button.disabled = False
-    create_ref_group_button.disabled = False
-    add_group()
-    create_reference_group_tab()
-
-
 def select_population():
     population = source.data["pop_names"][source.selected.indices[0]]
     new_indices = [i for i, g in enumerate(source.data["pop_names"]) if g == population]
@@ -348,7 +226,7 @@ def create_stats_tables():  # TODO remove error, if running without coordinates 
     b = populations['population_name'].values
     m = reduce(lambda s, q: s | q, map(lambda p: set(patients_data[p].columns.values), patients_data.keys()))
     iterables = [b, m]
-    print(b, m)
+    # print(b, m)
 
     df_stats = pd.DataFrame(index=pd.MultiIndex.from_product(iterables), columns=patients_data.keys())
     # print(df_stats)
@@ -372,19 +250,21 @@ def create_stats_tables():  # TODO remove error, if running without coordinates 
             cell_count_column = int_cols[0]
             # print("THIS IS", cell_count_column)
             cell_sum = df_patient[cell_count_column].sum()
-            print("###############################################", m)
+            # print("###############################################", m)
+            # print(b)
             # print(cell_sum)
-            for idx_b, b in enumerate(b):
+            for idx_b, bu in enumerate(b):
+                # print(idx_b, bu)
                 clusters = df_patient[df_viz['populationID'] == idx_b]
                 for idx_m, ma in enumerate(m):
                     if ma != cell_count_column and ma in clusters.columns:
                         values = map(lambda a, count: a * clusters.loc[count, cell_count_column],
                                      clusters[ma].dropna(), clusters[ma].index.values)
-                        df_stats.loc[(b, ma), pat] = reduce(lambda p, q: p + q, list(values), 0) / cell_sum
+                        df_stats.loc[(bu, ma), pat] = reduce(lambda p, q: p + q, list(values), 0) / cell_sum
                     else:
-                        df_stats.loc[(b, ma), pat] = reduce(lambda p, q: p + q, clusters[cell_count_column].values)
+                        df_stats.loc[(bu, ma), pat] = reduce(lambda p, q: p + q, clusters[cell_count_column].values)
     df_stats = df_stats.astype(float)
-    print(df_stats)
+    # print(df_stats)
     marker.value = cell_count_column
     # print(df_stats)
 
@@ -752,7 +632,7 @@ def active_tab(attr, old, new):
         # print(df_stats.index.get_level_values(1).unique().tolist())
         bubbles.options = ["None"] + df_stats.index.get_level_values(0).unique().tolist()
         markers.options = ["None"] + df_stats.index.get_level_values(1).unique().tolist()
-        print()
+        # print()
         bubbles.value = bubbles.options[1]
         markers.value = markers.options[1]
         # for i in stats_df.index:
@@ -772,7 +652,7 @@ def draw_boxplot(attr, old, new):
             for group_number, group in enumerate(groups):
                 if i in group[1]['measurements'].tolist():
                     stats_df.loc[i, 'group'] = groups_tabs.tabs[group_number].title
-        print(stats_df)
+        # print(stats_df)
         layout3.children[1] = boxplot.create_boxplot(stats_df)
 
 
@@ -919,9 +799,134 @@ layout3 = row(column(bubbles, markers), boxplot.create_boxplot())
 tab3 = Panel(child=layout3, title="statistics view")
 
 # FINAL LAYOUT ------------------------------------------------------------------------------------- FINAL LAYOUT
-load_test_data()
 
 tabs = Tabs(tabs=[tab1, tab2, tab3])
 tabs.on_change('active', active_tab)
 curdoc().add_root(tabs)
 curdoc().title = "Flowexplore"
+
+
+def load_test_data():
+    global df_viz
+    global source
+    global populations
+    global clinical_data
+
+#################################################################### coordinates
+    filename = 'coordinates.csv'
+    df = pd.read_csv(join(dirname(__file__), 'data/coordinates.csv'))
+    # if tree_dropdown.value == 'coordinates':
+    tree['coordinates'] = df
+    tree_dropdown.menu[0] = ("coordinates ok (" + filename + ")", 'coordinates')
+    df_viz['x'] = tree['coordinates'].iloc[:, 1].values
+    df_viz['y'] = tree['coordinates'].iloc[:, 2].values
+    df_viz['populationID'] = -1
+    source.data = df_viz.to_dict(orient='list')
+    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
+    x.options = df_viz.columns.tolist()
+    x.value = 'x'
+    y.options = df_viz.columns.tolist()
+    y.value = 'y'
+    color.options = ['None'] + df_viz.columns.tolist()
+    color.value = 'None'
+    size.options = ['None'] + df_viz.columns.tolist()
+    size.value = 'None'
+
+##################################################################### edges
+    filename = 'edges.csv'
+    df = pd.read_csv(join(dirname(__file__), 'data/edges.csv'))
+
+    tree['edges'] = df
+    tree_dropdown.menu[1] = ("edges ok (" + filename + ")", 'edges')
+    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
+
+    # if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in tree_dropdown.menu]):
+    tree_dropdown.button_type = "success"
+
+##################################################################### patients
+    pat_list = [
+        'pBM-36-sort-CD15-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 62 .csv',
+        'pBM-36-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 63 .csv',
+        'pBM-38-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 191 .csv',
+        'pBM-38-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 192 .csv',
+        'pBM-39-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 193 .csv',
+        'pBM-39-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 194 .csv',
+        'pBM-41-sort-CD15-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 195 .csv',
+        'pBM-41-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 196 .csv',
+        'pBM-43-sort-CD15-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 197 .csv',
+        'pBM-43-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 198 .csv',
+        'pBM-48-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 199 .csv',
+        'pBM-48-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 200 .csv',
+        'pBM-49-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 201 .csv',
+        'pBM-49-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 202 .csv',
+        'hBM-1n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 1 .csv',
+        'hBM-1n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 2 .csv',
+        'hBM-1n-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 3 .csv',
+        'hBM-1n-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 4 .csv',
+        'hBM-2n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 5 .csv',
+        'hBM-2n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 6 .csv',
+        'hBM-2n-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 7 .csv',
+        'hBM-2n-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 8 .csv',
+        'hBM-3n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 9 .csv',
+        'hBM-3n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 10 .csv',
+        'hBM-4n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 11 .csv',
+        'hBM-4n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 12 .csv',
+        'hBM-5n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 13 .csv',
+        'hBM-5n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 14 .csv',
+    ]
+    for p in pat_list:
+        filename = p
+        df = pd.read_csv(join(dirname(__file__), 'data/' + filename))
+        ind = filename.split(".")[0]
+        if 'Unnamed: 0' in df.columns:  # TODO drop all Unnamed
+            df.drop(columns=['Unnamed: 0'], inplace=True)
+        patients_data[ind] = df
+        patient.options = patient.options + [ind]
+        patient.value = ind
+    upload_patients.button_type = 'success'
+
+##################################################################### populations
+
+    file_io = open(join(dirname(__file__), 'data/populations.txt'), "r")
+    text = list(iter(file_io.read().splitlines()))
+    df_viz['populationID'] = -1
+    populations = pd.DataFrame()
+    for line in text:
+        if line != "":
+            split_line = line.split(":")
+            pop_name = split_line[0]
+
+            populations = populations.append({'population_name': pop_name,
+                                              'color': population_colors.loc[len(populations), 'color_name']},
+                                             ignore_index=True)
+            pop_list.menu.append((pop_name, str(len(populations) - 1)))
+
+            indices = [int(a) for a in split_line[1].split(",")]
+
+            df_viz.loc[indices, 'populationID'] = len(populations) - 1
+            patches = {
+                'populationID': [(i, len(populations) - 1) for i in indices]
+            }
+            source.patch(patches)
+            bubble_name.value = ""
+
+    upload_populations.button_type = 'success'
+    layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
+
+##################################################################### clinical data
+
+    clinical_data = pd.read_excel(join(dirname(__file__), 'data/PATIENTS DATABASE NEW FINAL to upload.xlsx'),
+                                  header=[0, 1, 2])
+
+    upload_clinical_data.button_type = 'success'
+    groups_tabs.tabs[0] = create_panel()
+    groups[0][1] = map_measurements_to_patients()
+
+    add_group_button.disabled = False
+    create_ref_group_button.disabled = False
+    add_group()
+    create_reference_group_tab()
+
+
+load_test_data()
+
