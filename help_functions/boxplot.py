@@ -6,14 +6,9 @@ from bokeh.plotting import figure
 
 
 def create_boxplot(df=pd.DataFrame()):
-    # generate some synthetic time series for six different categories
     if not df.empty:
         cats = df['group'].unique()
         value = df.columns[0]
-        yy = np.random.randn(2000)
-        g = np.random.choice(cats, 2000)
-        for i, l in enumerate(cats):
-            yy[g == l] += i // 2
 
         # find the quartiles and IQR for each category
         groups = df.groupby('group')
@@ -52,13 +47,10 @@ def create_boxplot(df=pd.DataFrame()):
         p.segment(cats, lower[value], cats, q1[value], line_color="black")
 
         # boxes
-        p.vbar(cats, 0.7, q2[value], q3[value], fill_color="#E08E79", line_color="black")
-        p.vbar(cats, 0.7, q1[value], q2[value], fill_color="#3B8686", line_color="black")
+        p.vbar(cats, 0.4, q2[value], q3[value], fill_color="#E08E79", line_color="black")
+        p.vbar(cats, 0.4, q1[value], q2[value], fill_color="#3B8686", line_color="black")
 
         # whiskers (almost-0 height rects simpler than segments)
-        # print(iqr)
-        # print(iqr.iloc[:,0].max())
-        # max_iqr = iqr.iloc[:,0].min()
         range_y = upper.iloc[:, 0].max() - lower.iloc[:, 0].min()
         p.rect(cats, lower[value], 0.2, range_y/500, line_color="black")
         p.rect(cats, upper[value], 0.2, range_y/500, line_color="black")
@@ -72,6 +64,6 @@ def create_boxplot(df=pd.DataFrame()):
         p.grid.grid_line_width = 2
         p.xaxis.major_label_text_font_size = "12pt"
     else:
-        p = figure(tools="", background_fill_color="#efefef", x_range=['a','b','c'], toolbar_location=None)
+        p = figure(tools="", background_fill_color="#efefef", x_range=['a', 'b', 'c'], toolbar_location=None)
     return p
 
