@@ -100,9 +100,9 @@ def file_callback_clinical(attr, old, new):  # TODO file check
 
     upload_clinical_data.button_type = 'success'
     groups_tabs.tabs[0] = create_panel()
-    groups[0][1] = manipulate_groups.map_measurements_to_patients(c_data=clinical_data,
-                                                                  pats_data=patients_data),
 
+    # groups[0][1] = manipulate_groups.map_measurements_to_patients(c_data=clinical_data,
+    #                                                               pats_data=patients_data),
     add_group_button.disabled = False
     create_ref_group_button.disabled = False
 
@@ -226,9 +226,7 @@ def update_correlation_plot(attr, old, new):
 def create_reference_group_tab():
     group_number = len(groups_tabs.tabs)
 
-    groups.append([{}, pd.DataFrame(manipulate_groups.map_measurements_to_patients(c_data=clinical_data,
-                                                                                   pats_data=patients_data),
-                                    columns=['measurements', 'patient'])])
+    groups.append([{}, manipulate_groups.map_measurements_to_patients(c_data=clinical_data, pats_data=patients_data)])
     groups[group_number][1] = hf.find_healthy(patients_data, clinical_data)
     new_tab = manipulate_groups.create_reference_group_tab(group_number,
                                                            groups, remove_group, rename_tab, remove_measurements)
@@ -253,9 +251,7 @@ def remove_measurements():
 
 def add_group():
     group_number = len(groups_tabs.tabs)
-    groups.append([{}, pd.DataFrame(manipulate_groups.map_measurements_to_patients(c_data=clinical_data,
-                                                                                   pats_data=patients_data),
-                                    columns=['measurements', 'patient'])])
+    groups.append([{}, manipulate_groups.map_measurements_to_patients(c_data=clinical_data, pats_data=patients_data)])
     groups_tabs.tabs = groups_tabs.tabs + [create_panel(group_number)]
     groups_tabs.active = len(groups_tabs.tabs) - 1
 
@@ -294,30 +290,29 @@ def active_tab(attr, old, new):
     if old == 0 and new == 1:
         create_stats_tables()
     if new == 2:
-        stats_df = pd.DataFrame(df_stats.loc[df_stats.index[0], :])
-        # print(df_stats.index.get_level_values(0).unique().tolist())
-        # print(df_stats.index.get_level_values(1).unique().tolist())
         bubbles.options = ["None"] + df_stats.index.get_level_values(0).unique().tolist()
         markers.options = ["None"] + df_stats.index.get_level_values(1).unique().tolist()
-        # print()
+        # print(df_stats)
         bubbles.value = bubbles.options[1]
         markers.value = markers.options[1]
-        # for i in stats_df.index:
-        #     for group_number, group in enumerate(groups):
-        #         if i in group[1]['measurements'].tolist():
-        #             stats_df.loc[i, 'group'] = groups_tabs.tabs[group_number].title
-        # layout3.children[1] = boxplot.create_boxplot(stats_df)
 
 
 def draw_boxplot(attr, old, new):
     b = bubbles.value
     m = markers.value
+    # print(b, m)
     if b != 'None' and m != 'None':
+        # print(groups)
         stats_df = pd.DataFrame(df_stats.loc[(b, m), :])
         # print(stats_df)
         for i in stats_df.index:
+            # print(i)
             for group_number, group in enumerate(groups):
+                # print(group)
+                # print(group[1])
+                # print(group[1]['measurements'])
                 if i in group[1]['measurements'].tolist():
+                    # print(i, group_number, group)
                     stats_df.loc[i, 'group'] = groups_tabs.tabs[group_number].title
         # print(stats_df)
         layout3.children[1] = boxplot.create_boxplot(stats_df)
@@ -404,7 +399,6 @@ bubble_tools_box = widgetbox([bubble_select, pop_list], width=200, css_classes=[
 download_tools_box = widgetbox([download, download_populations], width=200)
 
 # data table
-formatter = NumberFormatter(format='0.0000')
 data_table = DataTable(source=source, columns=[], width=400, height=850, reorderable=True)
 
 layout = row(column(controls, add_bubble_box, bubble_tools_box, download_tools_box),
@@ -437,9 +431,7 @@ upload_clinical_data.js_on_click(CustomJS(args=dict(file_source=file_source_clin
 # merge = Select(title='Merge current group with:', value='None', options=['None'], width=200)      # TODO merge
 
 group1 = create_panel()
-groups.append([{}, pd.DataFrame(manipulate_groups.map_measurements_to_patients(c_data=clinical_data,
-                                                                               pats_data=patients_data)
-                                , columns=['measurements', 'patient'])])
+groups.append([{}, manipulate_groups.map_measurements_to_patients(c_data=clinical_data, pats_data=patients_data)])
 
 groups_tabs = Tabs(tabs=[group1])
 groups_tabs.width = 800
@@ -481,6 +473,7 @@ def load_test_data():
     global clinical_data
 
 #################################################################### coordinates
+
     filename = 'coordinates.csv'
     df = pd.read_csv(join(dirname(__file__), 'data/coordinates.csv'))
     # if tree_dropdown.value == 'coordinates':
@@ -588,12 +581,13 @@ def load_test_data():
 
     upload_clinical_data.button_type = 'success'
     groups_tabs.tabs[0] = create_panel()
-    groups[0][1] = manipulate_groups.map_measurements_to_patients(c_data=clinical_data,
-                                                                  pats_data=patients_data),
+    # groups[0][1] = manipulate_groups.map_measurements_to_patients(c_data=clinical_data,
+    #                                                               pats_data=patients_data),
 
     add_group_button.disabled = False
     create_ref_group_button.disabled = False
     add_group()
+    # print(groups)
     create_reference_group_tab()
 
 

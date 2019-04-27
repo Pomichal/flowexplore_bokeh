@@ -47,7 +47,7 @@ def file_callback_populations(file_source, viz_df, main_source):  # TODO file ch
             pop_name = split_line[0]
 
             pops = pops.append({'population_name': pop_name,
-                                'color': population_colors.loc[len(populations), 'color_name']},
+                                'color': population_colors.loc[len(pops), 'color_name']},
                                ignore_index=True)
             indices = [int(a) for a in split_line[1].split(",")]
 
