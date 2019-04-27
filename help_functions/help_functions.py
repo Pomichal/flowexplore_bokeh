@@ -2,6 +2,7 @@ import matplotlib as mpl
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 import pandas as pd
+from functools import reduce
 from bokeh.layouts import row, widgetbox, column
 from functools import partial
 from bokeh.models import Select
@@ -70,6 +71,57 @@ def scale(old_value, old_min, old_max, new_min=25, new_max=50):
     old_range = (old_max - old_min)
     new_range = (new_max - new_min)
     return (((old_value - old_min) * new_range) / old_range) + new_min
+
+
+def create_stats_tables(pops, pats_data, viz_df):  # TODO remove error, if running without coordinates data
+    b = pops['population_name'].values
+    m = reduce(lambda s, q: s | q, map(lambda p: set(pats_data[p].columns.values), pats_data.keys()))
+    iterables = [b, m]
+
+    df_stats = pd.DataFrame(index=pd.MultiIndex.from_product(iterables), columns=pats_data.keys())
+
+    cell_count_column = 'None'
+
+    for pat in pats_data:
+        df_patient = pats_data[pat]
+
+        # select column with cell count
+        # TODO better condition to filter columns and find cell count
+        int_cols = list(filter(
+            lambda a: (not "id" in a.lower()) and df_patient[a].nunique() > 2 and
+                      ('int' in str(df_patient[a].values.dtype)), df_patient.columns))
+
+        if len(int_cols) != 1:  # couldn't find the cell count column
+            return df_stats, m
+        else:
+            cell_count_column = int_cols[0]
+            cell_sum = df_patient[cell_count_column].sum()
+            for idx_b, bu in enumerate(b):
+                clusters = df_patient[viz_df['populationID'] == idx_b]
+                for idx_m, ma in enumerate(m):
+                    if ma != cell_count_column and ma in clusters.columns:
+                        values = map(lambda a, count: a * clusters.loc[count, cell_count_column],
+                                     clusters[ma].dropna(), clusters[ma].index.values)
+                        df_stats.loc[(bu, ma), pat] = reduce(lambda p, q: p + q, list(values), 0) / cell_sum
+                    else:
+                        df_stats.loc[(bu, ma), pat] = reduce(lambda p, q: p + q, clusters[cell_count_column].values)
+    df_stats = df_stats.astype(float)
+    return df_stats, m
+
+
+def find_healthy(pats_data, c_data):
+    measurements = []
+    for pat in pats_data.keys():
+        pat_name = "-".join(pat.split("-")[:2])
+        if pat_name not in c_data.index:
+            measurements += [pat]
+
+    new_df = pd.DataFrame(columns=['measurements', 'patient'])
+
+    for m in measurements:
+        df = pd.DataFrame([[m, 'healthy']], columns=['measurements', 'patient'])
+        new_df = new_df.append(df)
+    return new_df.reset_index(drop=True)
 
 # trying drawing using graphs, but missing easily moving of vertices
 # def create_figure2(df):

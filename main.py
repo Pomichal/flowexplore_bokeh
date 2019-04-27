@@ -16,7 +16,7 @@ import base64
 from help_functions import help_functions as hf
 from help_functions import boxplot
 from help_functions import file_upload
-from help_functions import create_figure, manipulate_figure
+from help_functions import create_figure, manipulate_figure, correlation_plot, manipulate_groups
 
 file_source_tree = ColumnDataSource({'file_contents': [], 'file_name': []})
 
@@ -100,7 +100,8 @@ def file_callback_clinical(attr, old, new):  # TODO file check
 
     upload_clinical_data.button_type = 'success'
     groups_tabs.tabs[0] = create_panel()
-    groups[0][1] = map_measurements_to_patients()
+    groups[0][1] = manipulate_groups.map_measurements_to_patients(c_data=clinical_data,
+                                                                  pats_data=patients_data),
 
     add_group_button.disabled = False
     create_ref_group_button.disabled = False
@@ -194,14 +195,7 @@ def select_patient(attr, old, new):
             (df_viz.columns.tolist()[-1] if 'ID' not in df_viz.columns.tolist()[-1] else df_viz.columns.tolist()[
                 -2])
     else:   # TODO show error message?
-        x.options = df_viz.columns.tolist()
-        x.value = df_viz.columns.tolist()[0]
-        y.options = df_viz.columns.tolist()
-        y.value = df_viz.columns.tolist()[1]
-        color.options = ['None'] + df_viz.columns.tolist()
-        color.value = 'None'
-        size.options = ['None'] + df_viz.columns.tolist()
-        size.value = 'None'
+        print("ERROR: please select a patient")
     layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
 
@@ -215,150 +209,29 @@ def check_selection(attr, old, new):
 
 def create_stats_tables():  # TODO remove error, if running without coordinates data
     global df_stats
-    # create empty dataframe with multiindex
-    b = populations['population_name'].values
-    m = reduce(lambda s, q: s | q, map(lambda p: set(patients_data[p].columns.values), patients_data.keys()))
-    iterables = [b, m]
-    # print(b, m)
 
-    df_stats = pd.DataFrame(index=pd.MultiIndex.from_product(iterables), columns=patients_data.keys())
-    # print(df_stats)
-    marker.options = ['None'] + list(m)
+    df_stats, marker_list = hf.create_stats_tables(populations, patients_data, df_viz)
 
-    cell_count_column = 'None'
-
-    for pat in patients_data:
-        df_patient = patients_data[pat]
-
-        # select column with cell count
-        # TODO better condition to filter columns and find cell count
-        int_cols = list(filter(
-            lambda a: (not "id" in a.lower()) and df_patient[a].nunique() > 2 and ('int' in str(df_patient[a].values.dtype)),
-            df_patient.columns))
-        # print(pat, int_cols)
-        if len(int_cols) != 1:
-            print("ERROR")  # TODO error message
-            return
-        else:
-            cell_count_column = int_cols[0]
-            # print("THIS IS", cell_count_column)
-            cell_sum = df_patient[cell_count_column].sum()
-            # print("###############################################", m)
-            # print(b)
-            # print(cell_sum)
-            for idx_b, bu in enumerate(b):
-                # print(idx_b, bu)
-                clusters = df_patient[df_viz['populationID'] == idx_b]
-                for idx_m, ma in enumerate(m):
-                    if ma != cell_count_column and ma in clusters.columns:
-                        values = map(lambda a, count: a * clusters.loc[count, cell_count_column],
-                                     clusters[ma].dropna(), clusters[ma].index.values)
-                        df_stats.loc[(bu, ma), pat] = reduce(lambda p, q: p + q, list(values), 0) / cell_sum
-                    else:
-                        df_stats.loc[(bu, ma), pat] = reduce(lambda p, q: p + q, clusters[cell_count_column].values)
-    df_stats = df_stats.astype(float)
-    # print(df_stats)
-    marker.value = cell_count_column
-    # print(df_stats)
-
-
-def correlation_plot():
-    if marker.value != "None":
-        patients_list = list(patients_data.keys())
-
-        p = figure(title="correlation on marker " + str(marker.value),
-                   x_range=patients_list, y_range=patients_list,
-                   plot_width=800, plot_height=800,
-                   tools='pan, box_zoom,reset, wheel_zoom',
-                   tooltips=[('rate', '@rate%')])
-
-        p.grid.grid_line_color = None
-        p.axis.axis_line_color = None
-        p.axis.major_tick_line_color = None
-        p.axis.major_label_text_font_size = "10pt"
-        p.axis.major_label_standoff = 0
-        p.xaxis.major_label_orientation = pi / 2
-
-        df = pd.DataFrame(index=patients_data[patients_list[0]].index.copy())
-
-        for pat in patients_list:
-            df[pat] = patients_data[pat][marker.value] if marker.value in patients_data[pat].columns else np.NaN
-
-        df.columns = patients_list
-        # print(df)
-
-        df = pd.DataFrame(df.corr().stack(), columns=['rate']).reset_index()
-        # print(df)
-
-        mapper = LinearColorMapper(palette=hf.create_color_map(),
-                                   high=1,
-                                   high_color='red',
-                                   low=-1,
-                                   low_color='blue'
-                                   )
-        color_bar = ColorBar(color_mapper=mapper, location=(0, 0))
-
-        p.rect(x="level_0", y="level_1", width=1, height=1,
-               source=df,
-               fill_color={'field': 'rate', 'transform': mapper},
-               line_color=None)
-        p.add_layout(color_bar, 'right')
+    if df_stats.empty:
+        print("ERROR, couldn't find the cell count column")  # TODO error message?
     else:
-        p = figure(plot_height=800, plot_width=800,
-                   tools='pan, box_zoom, reset, wheel_zoom',
-                   toolbar_location="above")
-    return p
+        marker.options = ['None'] + list(marker_list)
+        marker.value = marker.options[-1]
 
 
 def update_correlation_plot(attr, old, new):
-    layout2.children[1] = correlation_plot()
-
-
-def find_healthy():
-    # print("#############################################################################")
-    measurements = []
-    for pat in patients_data.keys():
-        pat_name = "-".join(pat.split("-")[:2])
-        if pat_name not in clinical_data.index:
-            measurements += [pat]
-
-    new_df = pd.DataFrame(columns=['measurements', 'patient'])
-
-    for m in measurements:
-        df = pd.DataFrame([[m, 'healthy']], columns=['measurements', 'patient'])
-        new_df = new_df.append(df)
-    return new_df.reset_index(drop=True)
+    layout2.children[1] = correlation_plot.correlation_plot(marker.value, patients_data)
 
 
 def create_reference_group_tab():
     group_number = len(groups_tabs.tabs)
 
-    remove_group_button = Button(label='remove group', width=100, button_type="danger")
-    remove_group_button.on_click(remove_group)
-    group_name = TextInput(placeholder="rename group", width=150, css_classes=['renameGroupTextInput'])
-    confirm = Button(label="OK", width=100)
-    confirm.on_click(partial(rename_tab, text_input=group_name))
-
-    edit_box = widgetbox([remove_group_button, group_name, confirm], width=200, css_classes=['full-border'])
-
-    categories = Div(text="""<h3>reference group</h3>""")
-
-    remove_measurement = Button(label="remove measuremt(s)", button_type='danger', width=200)
-    remove_measurement.on_click(remove_measurements)
-    groups.append([{}, pd.DataFrame(map_measurements_to_patients(), columns=['measurements', 'patient'])])
-    groups[group_number][1] = find_healthy()
-    # groups[group_number][1].on_change('selected', enable_remove_button)
-    new_columns = [
-        TableColumn(field='measurements', title='measurements'),
-        TableColumn(field='patient', title='patient')
-    ]
-    patient_table = DataTable(source=ColumnDataSource(groups[group_number][1]),
-                              columns=new_columns, width=400, height=850, reorderable=True)
-    # new_tab = Panel(child=row(patient_table, remove_measurement), title="reference group")
-
-    new_tab = Panel(child=column(row(edit_box), categories,
-                                 row(patient_table, remove_measurement)),
-                    title="reference group")
+    groups.append([{}, pd.DataFrame(manipulate_groups.map_measurements_to_patients(c_data=clinical_data,
+                                                                                   pats_data=patients_data),
+                                    columns=['measurements', 'patient'])])
+    groups[group_number][1] = hf.find_healthy(patients_data, clinical_data)
+    new_tab = manipulate_groups.create_reference_group_tab(group_number,
+                                                           groups, remove_group, rename_tab, remove_measurements)
 
     groups_tabs.tabs = groups_tabs.tabs + [new_tab]
     groups_tabs.active = len(groups_tabs.tabs) - 1
@@ -380,13 +253,15 @@ def remove_measurements():
 
 def add_group():
     group_number = len(groups_tabs.tabs)
-    groups.append([{}, pd.DataFrame(map_measurements_to_patients(), columns=['measurements', 'patient'])])
+    groups.append([{}, pd.DataFrame(manipulate_groups.map_measurements_to_patients(c_data=clinical_data,
+                                                                                   pats_data=patients_data),
+                                    columns=['measurements', 'patient'])])
     groups_tabs.tabs = groups_tabs.tabs + [create_panel(group_number)]
     groups_tabs.active = len(groups_tabs.tabs) - 1
 
 
 def remove_group():
-    global merge
+    # global merge
     groups_tabs.tabs.pop(groups_tabs.active)
     groups.pop(groups_tabs.active)
     # print(merge.options.pop(groups_tabs.active + 1))
@@ -410,210 +285,9 @@ def rename_tab(text_input):
 
 
 def create_panel(group_number=0):  # TODO css classes
-    remove_group_button = Button(label='remove group', width=100, button_type="danger")
-    remove_group_button.on_click(remove_group)
-    group_name = TextInput(placeholder="rename group", width=150, css_classes=['renameGroupTextInput'])
-    confirm = Button(label="OK", width=100)
-    confirm.on_click(partial(rename_tab, text_input=group_name))
 
-    edit_box = widgetbox([remove_group_button, group_name, confirm], width=200, css_classes=['full-border'])
-
-    if clinical_data.empty:
-        level_3 = PreText(text='please upload clinical data')
-        new_tab = Panel(child=level_3, title="group " + str(group_number))
-
-    else:
-        # merge.options = merge.options + ["group " + str(group_number)]            # TODO merge
-        level_1 = Select(title='category', value='None', width=200,
-                         # css_classes=['select-width'],
-                         options=['None'] + clinical_data.columns.get_level_values(0).unique().tolist())
-        level_2 = Select(title='property', value='None', options=['None'], width=200)
-        level_3 = PreText(text='please select an attribute')
-        add_filter = Button(label='add condition', disabled=True, width=200)
-        level_1.on_change('value', partial(select_columns, select_2=level_2))
-        categories = Div(text="""""")
-        remove_measurement = Button(label="remove measuremt(s)", button_type='danger', width=200)
-        remove_measurement.on_click(remove_measurements)
-        groups[group_number][1] = map_measurements_to_patients()
-        # groups[group_number][1].on_change('selected', enable_remove_button)
-        new_columns = [
-            TableColumn(field='measurements', title='measurements'),
-            TableColumn(field='patient', title='patient')
-        ]
-        patient_table = DataTable(source=ColumnDataSource(groups[group_number][1]),
-                                  columns=new_columns, width=400, height=850, reorderable=True)
-        # patient_table.source.selected.on_change('indices', partial(enable_remove_button, tab_no=group_number))
-        filter_box = widgetbox([level_1, level_2, level_3, add_filter], css_classes=['full-border'])
-        new_tab = Panel(child=column(row(filter_box, edit_box), categories,
-                                     row(patient_table, remove_measurement)),
-                        title="group " + str(group_number))
-        level_2.on_change('value', partial(select_values, select_1=level_1, new_tab=new_tab))
-        add_filter.on_click(partial(add_value_to_filter, new_tab=new_tab))
-
-    return new_tab
-
-
-def select_columns(attr, old, new, select_2):
-    if new != 'None':
-        select_2.options = clinical_data[new].columns.get_level_values(0).tolist() + ['None']
-        select_2.value = 'None'
-    else:
-        select_2.options = ['None']
-        select_2.value = 'None'
-
-
-def select_values(attr, old, new, select_1, new_tab):
-    if new != 'None':
-        if clinical_data[select_1.value][new].values.dtype == 'object':  # categorical data
-            level_3 = MultiSelect(title='value', value=['None'], options=['None'], width=200)
-            try:
-                # print("1  ", clinical_data[select_1.value][new].values.dtype)
-                level_3.options = np.unique(clinical_data[select_1.value][new].iloc[:, 0].dropna().values).tolist()
-                level_3.value = [level_3.options[0]]
-            except TypeError:  # TODO filter non categorical data
-                level_3.options = np.unique(
-                    [str(obj) for obj in clinical_data[select_1.value][new].iloc[:, 0].dropna().values]).tolist()
-            finally:
-                new_tab.child.children[0].children[0].children[3].disabled = False
-                new_tab.child.children[0].children[0].children[2] = column(level_3)
-
-        elif 'datetime' in str(clinical_data[select_1.value][new].values.dtype):  # datetime data
-            start = clinical_data[select_1.value][new].min().dt.date.item()
-            end = clinical_data[select_1.value][new].max().dt.date.item()
-            date_slider = DateRangeSlider(title="",
-                                          start=start,
-                                          end=end,
-                                          value=(start, end),
-                                          # value_as_date=True,
-                                          # step=1,
-                                          width=180)
-            checkbox_group = CheckboxGroup(labels=["invert selection"], active=[], width=180)
-            new_tab.child.children[0].children[0].children[3].disabled = False
-            new_tab.child.children[0].children[0].children[2] = column(date_slider, checkbox_group)
-
-        elif 'int' in str(clinical_data[select_1.value][new].values.dtype) or \
-                'float' in str(clinical_data[select_1.value][new].values.dtype):
-            # print("3   ", clinical_data[select_1.value][new].values.dtype)
-            start = clinical_data[select_1.value][new].min().item()
-            end = clinical_data[select_1.value][new].max().item()
-            slider = RangeSlider(start=start, end=end, step=0.1, value=(start, end), title=new + " Range", width=180)
-            checkbox_group = CheckboxGroup(labels=["invert selection"], active=[], width=180)
-            new_tab.child.children[0].children[0].children[3].disabled = False
-            new_tab.child.children[0].children[0].children[2] = column(slider, checkbox_group)
-
-        else:
-            print("Something went wrong, unexpected datatype by clinical data value selecting")  # TODO error message?
-
-    else:
-        new_tab.child.children[0].children[0].children[2] = \
-            PreText(text='please select an attribute', width=200)
-        new_tab.child.children[0].children[0].children[3].disabled = True
-
-
-def find_measurements(patient_list):
-    # print(old_list)
-    # print(patient_list)
-    measurement_list = {}
-    for pat in patient_list:
-        measurement_list[pat] = []
-        for measurement in patients_data.keys():
-            if pat + "-" in measurement:
-                measurement_list[pat].append(measurement)
-        if not measurement_list[pat]:
-            measurement_list.pop(pat)
-    return measurement_list
-
-
-def add_value_to_filter(new_tab):
-    level_1 = new_tab.child.children[0].children[0].children[0].value
-    level_2 = new_tab.child.children[0].children[0].children[1].value
-    level_3 = new_tab.child.children[0].children[0].children[2].children
-    group_no = groups_tabs.active
-    # print("old", groups)
-    df = clinical_data[level_1][level_2]
-    if len(level_3) == 2:
-        invert = len(level_3[1].active) == 1
-
-        if 'datetime' in str(clinical_data[level_1][level_2].values.dtype):
-            start = level_3[0].value_as_date[0]
-            end = level_3[0].value_as_date[1]
-            if invert:
-                i = df[df.columns[0]][(df[df.columns[0]] < pd.Timestamp(start))
-                                      | (df[df.columns[0]] > pd.Timestamp(end))].index
-            else:
-                i = df[df.columns[0]][(df[df.columns[0]] > pd.Timestamp(start))
-                                      & (df[df.columns[0]] < pd.Timestamp(end))].index
-        else:  # if number
-            start = level_3[0].value[0]
-            end = level_3[0].value[1]
-            if invert:
-                i = df[df.columns[0]][(df[df.columns[0]] < start)
-                                      | (df[df.columns[0]] > end)].index
-            else:
-                i = df[df.columns[0]][(df[df.columns[0]] > start)
-                                      & (df[df.columns[0]] < end)].index
-
-        if level_1 not in groups[group_no][0].keys():
-            groups[group_no][0][level_1] = {}
-        groups[group_no][0][level_1][level_2] = (invert, start, end)
-
-    else:
-        categories = level_3[0].value
-        i = df[df.columns[0]][df[df.columns[0]].isin(categories)].index
-        if level_1 in groups[group_no][0].keys():
-            groups[group_no][0][level_1][level_2] = categories
-        else:
-            groups[group_no][0][level_1] = {}
-            groups[group_no][0][level_1][level_2] = categories
-
-    measurements = find_measurements(i)
-    new_df = pd.DataFrame(columns=['measurements', 'patient'])
-    for k, v in measurements.items():
-        for val in v:
-            df = pd.DataFrame([[val, k]], columns=['measurements', 'patient'])
-            new_df = new_df.append(df)
-    groups[group_no][1] = new_df.reset_index(drop=True)
-    # print("GGG", new_df)
-    # print("#######################################################")
-    new_tab.child.children[2].children[0].source = ColumnDataSource(groups[group_no][1])
-
-    new_tab.child.children[1].text = write_conditions(groups[group_no][0], groups[group_no][1].shape[0])
-    # print("new", groups)
-    # print(write_conditions(groups[group_no]))
-    # print()
-
-
-def write_conditions(conditions, group_size, tag="li"):  # TODO drop empty conditions
-    # conditions_text = "<h4>Group size: " + str(group_size) + "</h4><h3>conditions:</h3><ul>"
-    conditions_text = "<h3>conditions:</h3><ul>"
-
-    for k, v in conditions.items():
-        for key, value in v.items():
-            if len(value) == 3 and type(value[0]) is bool:
-                if value[0]:
-                    conditions_text += "<" + tag + ">" + key + " in &lt; min, " + str(value[1]) + "&gt; OR &lt; " \
-                                       + str(value[2]) + ", max &gt; </" + tag + ">"
-                else:
-                    conditions_text += "<" + tag + ">" + key + " in &lt; " + str(value[1]) + " , " + str(value[2]) \
-                                       + " &gt; </" + tag + ">"
-            else:
-                conditions_text += "<" + tag + ">" + key + " in " + str(value) + "</" + tag + ">"
-
-    return conditions_text + "</ul>"
-
-
-def map_measurements_to_patients():
-    # print("#############################################################################")
-    new_df = pd.DataFrame(columns=['measurements', 'patient'])
-    pat_list = clinical_data.index.dropna()
-    # measurement_list = patients_data.keys()
-    for k, v in find_measurements(pat_list).items():
-        for val in v:
-            df = pd.DataFrame([[val, k]], columns=['measurements', 'patient'])
-            new_df = new_df.append(df)
-    # print(new_df)
-    # print("#############################################################################")
-    return new_df.reset_index(drop=True)
+    return manipulate_groups.create_panel(clinical_data, patients_data, rename_tab, remove_group,
+                                          remove_measurements, groups, group_number)
 
 
 def active_tab(attr, old, new):
@@ -763,17 +437,18 @@ upload_clinical_data.js_on_click(CustomJS(args=dict(file_source=file_source_clin
 # merge = Select(title='Merge current group with:', value='None', options=['None'], width=200)      # TODO merge
 
 group1 = create_panel()
-groups.append([{}, pd.DataFrame(map_measurements_to_patients(), columns=['measurements', 'patient'])])
+groups.append([{}, pd.DataFrame(manipulate_groups.map_measurements_to_patients(c_data=clinical_data,
+                                                                               pats_data=patients_data)
+                                , columns=['measurements', 'patient'])])
 
 groups_tabs = Tabs(tabs=[group1])
 groups_tabs.width = 800
 
-layout2 = row(basic_overview, correlation_plot(), column(children=[column(row(add_group_button,
-                                                                              create_ref_group_button,
-                                                                              upload_clinical_data),
+layout2 = row(basic_overview, correlation_plot.correlation_plot(marker.value, patients_data),
+              column(children=[column(row(add_group_button, create_ref_group_button, upload_clinical_data),
                                                                           # merge
-                                                                          ),
-                                                                   groups_tabs]))
+                                      ),
+                               groups_tabs]))
 
 tab2 = Panel(child=layout2, title="group selection view")
 
@@ -913,7 +588,8 @@ def load_test_data():
 
     upload_clinical_data.button_type = 'success'
     groups_tabs.tabs[0] = create_panel()
-    groups[0][1] = map_measurements_to_patients()
+    groups[0][1] = manipulate_groups.map_measurements_to_patients(c_data=clinical_data,
+                                                                  pats_data=patients_data),
 
     add_group_button.disabled = False
     create_ref_group_button.disabled = False
