@@ -172,43 +172,36 @@ def add_to_bubble(attr, old, new):
 def select_patient(attr, old, new):
     global df_viz
     global source
+
     if patient.value != 'None':
-        if df_viz.empty:
-            df_viz = patients_data[patient.value]
-            df_viz['populationID'] = -1
-            source.data = df_viz.to_dict(orient='list')
-            x.options = df_viz.columns.tolist()
-            x.value = df_viz.columns.tolist()[0]
-            y.options = df_viz.columns.tolist()
-            y.value = df_viz.columns.tolist()[1]
-            color.options = ['None'] + df_viz.columns.tolist()
-            color.value = 'None'
-            size.options = ['None'] + df_viz.columns.tolist()
-            size.value = 'None'
-        else:
-            drop_cols = map(lambda a: a if a not in ['x', 'y', 'populationID'] else None, df_viz.columns.tolist())
-            df_viz.drop(columns=filter(lambda v: v is not None, drop_cols), inplace=True)
-            df_viz = df_viz.join(patients_data[patient.value])
-            # print(df_viz)
-            source.data = df_viz.to_dict(orient='list')
-            x.options = df_viz.columns.tolist()
-            x.value = 'x' if 'x' in df_viz.columns.tolist() else \
-                (df_viz.columns.tolist()[0] if 'ID' not in df_viz.columns.tolist()[0] else df_viz.columns.tolist()[1])
-            y.options = df_viz.columns.tolist()
-            y.value = 'y' if 'y' in df_viz.columns.tolist() else \
-                (df_viz.columns.tolist()[-1] if 'ID' not in df_viz.columns.tolist()[-1] else df_viz.columns.tolist()[
-                    -2])
-            color.options = ['None'] + df_viz.columns.tolist()
-            color.value = 'None'
-            size.options = ['None'] + df_viz.columns.tolist()
-            size.value = 'None'
+        df_viz = manipulate_figure.select_patient(df_viz, source, patient.value, patients_data[patient.value])
     else:
-        if 'x' not in df_viz.columns.tolist():
-            df_viz = pd.DataFrame()
-            source.data = {}
-        else:
-            drop_cols = map(lambda a: a if a not in ['x', 'y', 'populationID'] else None, df_viz.columns.tolist())
-            df_viz.drop(columns=filter(lambda v: v is not None, drop_cols), inplace=True)
+        df_viz = manipulate_figure.select_patient(df_viz, source, patient.value, pd.DataFrame())
+
+    if not df_viz.empty:
+        x.options = df_viz.columns.tolist()
+        x.value = df_viz.columns.tolist()[0]
+        y.options = df_viz.columns.tolist()
+        y.value = df_viz.columns.tolist()[1]
+        color.options = ['None'] + df_viz.columns.tolist()
+        color.value = 'None'
+        size.options = ['None'] + df_viz.columns.tolist()
+        size.value = 'None'
+        x.value = 'x' if 'x' in df_viz.columns.tolist() else \
+            (df_viz.columns.tolist()[0] if 'ID' not in df_viz.columns.tolist()[0] else df_viz.columns.tolist()[1])
+        y.options = df_viz.columns.tolist()
+        y.value = 'y' if 'y' in df_viz.columns.tolist() else \
+            (df_viz.columns.tolist()[-1] if 'ID' not in df_viz.columns.tolist()[-1] else df_viz.columns.tolist()[
+                -2])
+    else:   # TODO show error message?
+        x.options = df_viz.columns.tolist()
+        x.value = df_viz.columns.tolist()[0]
+        y.options = df_viz.columns.tolist()
+        y.value = df_viz.columns.tolist()[1]
+        color.options = ['None'] + df_viz.columns.tolist()
+        color.value = 'None'
+        size.options = ['None'] + df_viz.columns.tolist()
+        size.value = 'None'
     layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
 
