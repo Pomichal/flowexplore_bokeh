@@ -22,7 +22,7 @@ def diff_plot(df_diff=pd.DataFrame(), marker_name='marker', bubble_name='bubble'
         kw['title'] = "Difference from reference group: marker '%s' in population '%s'" % (marker_name, bubble_name)
 
         p = figure(background_fill_color="#efefef", x_range=cats, toolbar_location='above',
-                   tools='pan, box_zoom,reset, wheel_zoom, save',
+                   tools='pan, box_zoom,reset, wheel_zoom, save', height=350,
                    **kw)
         p.add_layout(zero_diff)
 

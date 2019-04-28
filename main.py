@@ -610,6 +610,10 @@ def load_test_data():
     add_group_button.disabled = False
     create_ref_group_button.disabled = False
     [add_group() for _ in range(6)]
+    for i in range(7):
+        print(groups[i][1].iloc[2*i:2*i+2, :])
+        groups[i][1] = groups[i][1].iloc[2*i:2*i+2, :]
+        groups_tabs.tabs[i].child.children[2].children[0].source = ColumnDataSource(groups[i][1])
     # print(groups)
     create_reference_group_tab()
 

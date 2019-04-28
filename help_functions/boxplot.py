@@ -38,7 +38,7 @@ def create_boxplot(df=pd.DataFrame()):
         kw = dict()
         kw['title'] = "Boxplot: marker '%s' in population '%s'" % (value[1], value[0])
 
-        p = figure(background_fill_color="#efefef", x_range=cats, toolbar_location='above',
+        p = figure(background_fill_color="#efefef", x_range=cats, toolbar_location='above', height=350,
                    tools='pan, box_zoom,reset, wheel_zoom, save', **kw)
 
         # if no outliers, shrink lengths of stems to be no longer than the minimums or maximums
