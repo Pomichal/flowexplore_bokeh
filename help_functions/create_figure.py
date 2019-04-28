@@ -108,10 +108,14 @@ def create_figure(df, df_edges, df_populations, source, x_value, y_value, color_
         p.toolbar.active_tap = draw_tool
 
         new_columns = [
-            TableColumn(field=x_value, title=x_value, formatter=formatter),
-            TableColumn(field=y_value, title=y_value, formatter=formatter),
-            TableColumn(field=color_value, title=color_value, formatter=formatter),
-            TableColumn(field=size_value, title=size_value, formatter=formatter),
+            # TableColumn(field=x_value, title=x_value, formatter=formatter),
+            # TableColumn(field=y_value, title=y_value, formatter=formatter),
+            # TableColumn(field=color_value, title=color_value, formatter=formatter),
+            # TableColumn(field=size_value, title=size_value, formatter=formatter),
+            TableColumn(field=x_value, title=x_value),
+            TableColumn(field=y_value, title=y_value),
+            TableColumn(field=color_value, title=color_value),
+            TableColumn(field=size_value, title=size_value),
             TableColumn(field='pop_names', title="population"),
         ]
         return p, new_columns

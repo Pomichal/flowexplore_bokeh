@@ -246,6 +246,7 @@ def remove_measurements():
     group_no = groups_tabs.active
     indices = groups_tabs.tabs[groups_tabs.active].child.children[2].children[0].source.selected.indices
     groups[groups_tabs.active][1].drop(groups[groups_tabs.active][1].index[indices], inplace=True)
+    # groups[groups_tabs.active][1].reset_index(inplace=True, drop=True)
     groups_tabs.tabs[group_no].child.children[2].children[0].source = ColumnDataSource(groups[group_no][1])
 
 
@@ -290,6 +291,11 @@ def active_tab(attr, old, new):
     if old == 0 and new == 1:
         create_stats_tables()
     if new == 2:
+        # print(df_stats)
+        # print(df_stats.index)
+        # print(df_stats.index.get_level_values(0))
+        # print(df_stats.index.get_level_values(0).unique())
+        # print(df_stats.index.get_level_values(0).unique().tolist())
         bubbles.options = ["None"] + df_stats.index.get_level_values(0).unique().tolist()
         markers.options = ["None"] + df_stats.index.get_level_values(1).unique().tolist()
         # print(df_stats)
@@ -300,10 +306,8 @@ def active_tab(attr, old, new):
 def draw_boxplot(attr, old, new):
     b = bubbles.value
     m = markers.value
-    # print(b, m)
     if b != 'None' and m != 'None':
-        calculate_diff(b,m)
-        # print(groups)
+        calculate_diff(b, m)
         stats_df = pd.DataFrame(df_stats.loc[(b, m), :])
         # print(stats_df)
         for i in stats_df.index:
@@ -326,16 +330,15 @@ def calculate_diff(b, m):
     reference_level = 0
     for g in groups:
         measurements = g[1]['measurements'].tolist()
-        if g[1]['patient'][0] == 'healthy':
+        if g[1]['patient'].values.tolist()[0] == 'healthy':
             reference_level = np.mean(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
             break
-
     for idx, g in enumerate(groups):
         measurements = g[1]['measurements'].tolist()
         group_level = np.mean(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
         diff_df.loc[groups_tabs.tabs[idx].title, 'diff'] = group_level - reference_level
 
-    layout3.children[2] = diff_plot.diff_plot(diff_df)
+    layout3.children[2] = diff_plot.diff_plot(diff_df, m, b)
 
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view
@@ -464,12 +467,12 @@ layout2 = row(basic_overview, correlation_plot.correlation_plot(marker.value, pa
 
 tab2 = Panel(child=layout2, title="group selection view")
 
-# TAB3 test results ------------------------------------------------------------------------ TAB3 test results
+# TAB3 visual evaluation ------------------------------------------------------------------------ TAB3 visual evaluation
 
 c = Button(label="under development")
 
-bubbles = Select(title='Population', value='None', options=['None'])
-markers = Select(title='Marker', value='None', options=['None'])
+bubbles = Select(title='Population', value='None', options=['None'], width=200)
+markers = Select(title='Marker', value='None', options=['None'], width=200)
 
 bubbles.on_change('value', draw_boxplot)
 markers.on_change('value', draw_boxplot)
@@ -530,30 +533,30 @@ def load_test_data():
         'pBM-36-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 63 .csv',
         'pBM-38-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 191 .csv',
         'pBM-38-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 192 .csv',
-        # 'pBM-39-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 193 .csv',
-        # 'pBM-39-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 194 .csv',
-        # 'pBM-41-sort-CD15-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 195 .csv',
-        # 'pBM-41-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 196 .csv',
-        # 'pBM-43-sort-CD15-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 197 .csv',
-        # 'pBM-43-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 198 .csv',
-        # 'pBM-48-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 199 .csv',
-        # 'pBM-48-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 200 .csv',
-        # 'pBM-49-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 201 .csv',
-        # 'pBM-49-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 202 .csv',
+        'pBM-39-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 193 .csv',
+        'pBM-39-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 194 .csv',
+        'pBM-41-sort-CD15-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 195 .csv',
+        'pBM-41-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 196 .csv',
+        'pBM-43-sort-CD15-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 197 .csv',
+        'pBM-43-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 198 .csv',
+        'pBM-48-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 199 .csv',
+        'pBM-48-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 200 .csv',
+        'pBM-49-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 201 .csv',
+        'pBM-49-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 202 .csv',
         'hBM-1n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 1 .csv',
         'hBM-1n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 2 .csv',
         'hBM-1n-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 3 .csv',
         'hBM-1n-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 4 .csv',
-        # 'hBM-2n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 5 .csv',
-        # 'hBM-2n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 6 .csv',
-        # 'hBM-2n-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 7 .csv',
-        # 'hBM-2n-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 8 .csv',
-        # 'hBM-3n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 9 .csv',
-        # 'hBM-3n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 10 .csv',
-        # 'hBM-4n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 11 .csv',
-        # 'hBM-4n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 12 .csv',
-        # 'hBM-5n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 13 .csv',
-        # 'hBM-5n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 14 .csv',
+        'hBM-2n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 5 .csv',
+        'hBM-2n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 6 .csv',
+        'hBM-2n-unsort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 7 .csv',
+        'hBM-2n-unsort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 8 .csv',
+        'hBM-3n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 9 .csv',
+        'hBM-3n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 10 .csv',
+        'hBM-4n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 11 .csv',
+        'hBM-4n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 12 .csv',
+        'hBM-5n-sort-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 13 .csv',
+        'hBM-5n-sort-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 14 .csv',
     ]
     for p in pat_list:
         filename = p
@@ -606,7 +609,7 @@ def load_test_data():
 
     add_group_button.disabled = False
     create_ref_group_button.disabled = False
-    add_group()
+    [add_group() for _ in range(6)]
     # print(groups)
     create_reference_group_tab()
 

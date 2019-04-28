@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from bokeh.plotting import figure
+from math import pi
 
 # source: https://bokeh.pydata.org/en/latest/docs/gallery/boxplot.html
 
@@ -34,7 +35,11 @@ def create_boxplot(df=pd.DataFrame()):
                 outx.append(keys[0])
                 outy.append(out.loc[keys[0]].loc[keys[1]])
 
-        p = figure(tools="", background_fill_color="#efefef", x_range=cats, toolbar_location=None)
+        kw = dict()
+        kw['title'] = "Boxplot: marker '%s' in population '%s'" % (value[1], value[0])
+
+        p = figure(background_fill_color="#efefef", x_range=cats, toolbar_location='above',
+                   tools='pan, box_zoom,reset, wheel_zoom, save', **kw)
 
         # if no outliers, shrink lengths of stems to be no longer than the minimums or maximums
         qmin = groups.quantile(q=0.00)
@@ -61,8 +66,11 @@ def create_boxplot(df=pd.DataFrame()):
 
         p.xgrid.grid_line_color = None
         p.ygrid.grid_line_color = "white"
+        p.yaxis.axis_label = "marker '%s' in population '%s'" % (value[1], value[0])
         p.grid.grid_line_width = 2
-        p.xaxis.major_label_text_font_size = "12pt"
+        p.xaxis.major_label_text_font_size = "10pt"
+        p.xaxis.major_label_orientation = pi / 2
+
     else:
         p = figure(tools="", background_fill_color="#efefef", x_range=['a', 'b', 'c'], toolbar_location=None)
     return p
