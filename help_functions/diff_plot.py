@@ -22,7 +22,7 @@ def diff_plot(df_diff=pd.DataFrame(), marker_name='marker', bubble_name='bubble'
         kw['title'] = "Difference from reference group: marker '%s' in population '%s'" % (marker_name, bubble_name)
 
         p = figure(background_fill_color="#efefef", x_range=cats, toolbar_location='above',
-                   tools='pan, box_zoom,reset, wheel_zoom, save', height=350,
+                   tools='pan, box_zoom,reset, wheel_zoom, save', height=400,
                    **kw)
         p.add_layout(zero_diff)
 
@@ -38,14 +38,15 @@ def diff_plot(df_diff=pd.DataFrame(), marker_name='marker', bubble_name='bubble'
         p.axis.major_label_text_font_size = "10pt"
         p.xaxis.major_label_orientation = pi / 2
         mi, ma = np.min(end), np.max(end)
-        print("MIN, MAX", mi, ma)
+        # print("MIN, MAX", mi, ma)
         if mi + ma < 0:
             p.y_range = Range1d(mi + 0.5*mi, -mi - 0.5*mi)
         else:
             p.y_range = Range1d(-ma - 0.5*ma, ma + 0.5*ma)
 
     else:
-        p = figure(tools="", background_fill_color="#efefef", x_range=['a', 'b', 'c'], toolbar_location=None)
+        p = figure(tools="", background_fill_color="#efefef", x_range=['a', 'b', 'c'], toolbar_location=None,
+                   height=400)
 
     return p
 

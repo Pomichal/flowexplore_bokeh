@@ -5,7 +5,7 @@ from bokeh.layouts import row, widgetbox, column
 from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, \
     CustomJS, LassoSelectTool, GraphRenderer, StaticLayoutProvider, Circle, MultiLine
 from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn, NumberFormatter, Panel, Tabs, \
-    PreText, DateRangeSlider, RangeSlider, CheckboxGroup, Div, MultiSelect
+    PreText, DateRangeSlider, RangeSlider, CheckboxGroup, Div, MultiSelect, RadioButtonGroup
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.plotting import curdoc, figure
 from functools import reduce, partial
@@ -331,11 +331,17 @@ def calculate_diff(b, m):
     for g in groups:
         measurements = g[1]['measurements'].tolist()
         if g[1]['patient'].values.tolist()[0] == 'healthy':
-            reference_level = np.mean(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
+            if mean_or_median.active == 0:
+                reference_level = np.mean(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
+            else:
+                reference_level = np.median(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
             break
     for idx, g in enumerate(groups):
         measurements = g[1]['measurements'].tolist()
-        group_level = np.mean(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
+        if mean_or_median.active == 0:
+            group_level = np.mean(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
+        else:
+            group_level = np.median(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
         diff_df.loc[groups_tabs.tabs[idx].title, 'diff'] = group_level - reference_level
 
     layout3.children[2] = diff_plot.diff_plot(diff_df, m, b)
@@ -473,11 +479,14 @@ c = Button(label="under development")
 
 bubbles = Select(title='Population', value='None', options=['None'], width=200)
 markers = Select(title='Marker', value='None', options=['None'], width=200)
+mean_or_median = RadioButtonGroup(labels=["Mean", "Median"], active=0, width=200)
+
 
 bubbles.on_change('value', draw_boxplot)
 markers.on_change('value', draw_boxplot)
+mean_or_median.on_change('active', draw_boxplot)
 
-layout3 = row(column(bubbles, markers), boxplot.create_boxplot(), diff_plot.diff_plot())
+layout3 = row(column(bubbles, markers, mean_or_median), boxplot.create_boxplot(), diff_plot.diff_plot())
 
 tab3 = Panel(child=layout3, title="statistics view")
 
@@ -611,7 +620,7 @@ def load_test_data():
     create_ref_group_button.disabled = False
     [add_group() for _ in range(6)]
     for i in range(7):
-        print(groups[i][1].iloc[2*i:2*i+2, :])
+        # print(groups[i][1].iloc[2*i:2*i+2, :])
         groups[i][1] = groups[i][1].iloc[2*i:2*i+2, :]
         groups_tabs.tabs[i].child.children[2].children[0].source = ColumnDataSource(groups[i][1])
     # print(groups)

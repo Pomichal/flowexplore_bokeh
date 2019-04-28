@@ -38,7 +38,7 @@ def create_boxplot(df=pd.DataFrame()):
         kw = dict()
         kw['title'] = "Boxplot: marker '%s' in population '%s'" % (value[1], value[0])
 
-        p = figure(background_fill_color="#efefef", x_range=cats, toolbar_location='above', height=350,
+        p = figure(background_fill_color="#efefef", x_range=cats, toolbar_location='above', height=400,
                    tools='pan, box_zoom,reset, wheel_zoom, save', **kw)
 
         # if no outliers, shrink lengths of stems to be no longer than the minimums or maximums
@@ -72,6 +72,7 @@ def create_boxplot(df=pd.DataFrame()):
         p.xaxis.major_label_orientation = pi / 2
 
     else:
-        p = figure(tools="", background_fill_color="#efefef", x_range=['a', 'b', 'c'], toolbar_location=None)
+        p = figure(tools="", background_fill_color="#efefef", x_range=['a', 'b', 'c'], toolbar_location=None,
+                   height=400)
     return p
 
