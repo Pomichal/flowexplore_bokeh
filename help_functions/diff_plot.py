@@ -6,6 +6,31 @@ import random
 from math import pi
 
 
+def calculate_diff(b, m, stats_df, group_names, groups_dict, mean_or_med=0):
+    # stats_df = pd.DataFrame(stats.loc[(b, m), :])
+    diff_df = pd.DataFrame(index=list([tab.title for tab in group_names]), columns=['diff'])
+
+    reference_level = 0
+    for g in groups_dict:
+        measurements = g[1]['measurements'].tolist()
+        if g[1]['patient'].values.tolist()[0] == 'healthy':
+            if mean_or_med == 0:
+                reference_level = np.mean(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
+            else:
+                reference_level = np.median(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
+            break
+    for idx, g in enumerate(groups_dict):
+        measurements = g[1]['measurements'].tolist()
+        if mean_or_med == 0:
+            group_level = np.mean(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
+        else:
+            group_level = np.median(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
+        diff_df.loc[group_names[idx].title, 'diff'] = group_level - reference_level
+
+    return diff_df
+    # layout3.children[2] = diff_plot.diff_plot(diff_df, m, b)
+
+
 def generate_random_color():
     return '#%02X%02X%02X' % (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 

@@ -16,7 +16,7 @@ import base64
 from help_functions import help_functions as hf
 from help_functions import boxplot
 from help_functions import file_upload
-from help_functions import create_figure, manipulate_figure, correlation_plot, manipulate_groups, diff_plot
+from help_functions import create_figure, manipulate_figure, correlation_plot, manipulate_groups, diff_plot, block_plot
 
 file_source_tree = ColumnDataSource({'file_contents': [], 'file_name': []})
 
@@ -105,6 +105,12 @@ def file_callback_clinical(attr, old, new):  # TODO file check
     #                                                               pats_data=patients_data),
     add_group_button.disabled = False
     create_ref_group_button.disabled = False
+    level_11.options = ['None'] + clinical_data.columns.get_level_values(0).unique().tolist()
+    level_11.on_change('value', partial(manipulate_groups.select_columns, select_2=level_12, c_data=clinical_data))
+    level_21.options = ['None'] + clinical_data.columns.get_level_values(0).unique().tolist()
+    level_21.on_change('value', partial(manipulate_groups.select_columns, select_2=level_22, c_data=clinical_data))
+    level_12.on_change('value', partial(manipulate_groups.select_values_2, w_box=filter_box_1, c_data=clinical_data))
+    level_22.on_change('value', partial(manipulate_groups.select_values_2, w_box=filter_box_2, c_data=clinical_data))
 
 
 def draw_figure(df, df_edges, df_populations):
@@ -307,44 +313,90 @@ def draw_boxplot(attr, old, new):
     b = bubbles.value
     m = markers.value
     if b != 'None' and m != 'None':
-        calculate_diff(b, m)
         stats_df = pd.DataFrame(df_stats.loc[(b, m), :])
-        # print(stats_df)
         for i in stats_df.index:
-            # print(i)
             for group_number, group in enumerate(groups):
-                # print(group)
-                # print(group[1])
-                # print(group[1]['measurements'])
                 if i in group[1]['measurements'].tolist():
-                    # print(i, group_number, group)
                     stats_df.loc[i, 'group'] = groups_tabs.tabs[group_number].title
-        # print(stats_df)
-        layout3.children[1] = boxplot.create_boxplot(stats_df)
+        calculate_diff(b, m)
+        layout3.children[1].children[0].children[0] = boxplot.create_boxplot(stats_df)
 
 
 def calculate_diff(b, m):
     stats_df = pd.DataFrame(df_stats.loc[(b, m), :])
-    diff_df = pd.DataFrame(index=list([tab.title for tab in groups_tabs.tabs]), columns=['diff'])
+    diff_df = diff_plot.calculate_diff(b, m, stats_df, groups_tabs.tabs, groups, mean_or_median.active)
 
-    reference_level = 0
-    for g in groups:
-        measurements = g[1]['measurements'].tolist()
-        if g[1]['patient'].values.tolist()[0] == 'healthy':
-            if mean_or_median.active == 0:
-                reference_level = np.mean(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
-            else:
-                reference_level = np.median(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
-            break
+    layout3.children[1].children[0].children[1] = diff_plot.diff_plot(diff_df, m, b)
+
+
+def draw_block_plot():
+    b = bubbles.value
+    m = markers.value
+
+    block_df = pd.DataFrame(index=list([tab.title for tab in groups_tabs.tabs]), columns=['val1', 'val2'])
+    stats_df = pd.DataFrame(df_stats.loc[(b, m), :])
+
     for idx, g in enumerate(groups):
-        measurements = g[1]['measurements'].tolist()
-        if mean_or_median.active == 0:
-            group_level = np.mean(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
-        else:
-            group_level = np.median(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
-        diff_df.loc[groups_tabs.tabs[idx].title, 'diff'] = group_level - reference_level
+        if 'healthy' not in g[1]['patient'].tolist():
+            patients = g[1]['patient'].unique().tolist()
 
-    layout3.children[2] = diff_plot.diff_plot(diff_df, m, b)
+            block_df.loc[groups_tabs.tabs[idx].title, 'val1'] = find_value(level_11.value, level_12.value,
+                                                                           filter_box_1.children[3].children,
+                                                                           patients, stats_df, b, m)
+
+            block_df.loc[groups_tabs.tabs[idx].title, 'val2'] = find_value(level_21.value, level_22.value,
+                                                                           filter_box_2.children[3].children,
+                                                                           patients, stats_df, b, m)
+
+    # print(block_df.dropna())
+    print(layout3)
+    print(layout3.children)
+    print(layout3.children[1])
+    print(layout3.children[1].children)
+    print(layout3.children[1].children[1])
+    layout3.children[1].children[1] = block_plot.block_plot(block_df.dropna(), m, b)
+
+
+def find_value(level_1, level_2, level_3, patients, stats_df, b, m):
+    df = clinical_data.loc[patients, :][level_1][level_2]
+    if len(level_3) == 2:
+        invert = len(level_3[1].active) == 1
+
+        if 'datetime' in str(df.values[0].dtype):
+            start = level_3[0].value_as_date[0]
+            end = level_3[0].value_as_date[1]
+            if invert:
+                i = df[df.columns[0]][(df[df.columns[0]] < pd.Timestamp(start))
+                                      | (df[df.columns[0]] > pd.Timestamp(end))].index
+            else:
+                i = df[df.columns[0]][(df[df.columns[0]] > pd.Timestamp(start))
+                                      & (df[df.columns[0]] < pd.Timestamp(end))].index
+        else:  # if number
+            start = level_3[0].value[0]
+            end = level_3[0].value[1]
+            if invert:
+                i = df[df.columns[0]][(df[df.columns[0]] < start)
+                                      | (df[df.columns[0]] > end)].index
+            else:
+                i = df[df.columns[0]][(df[df.columns[0]] > start)
+                                      & (df[df.columns[0]] < end)].index
+    else:
+        categories = level_3[0].value
+        i = df[df.columns[0]][df[df.columns[0]].isin(categories)].index
+
+    # print("iii", i)  # patients in group where attribute_1 TRUE
+    measurements = manipulate_groups.find_measurements(i, patients_data, output='list')
+
+    values = list([stats_df.loc[measurement, (b, m)] for measurement in measurements])
+    if mean_or_median.active == 0 and len(values) > 0:
+        # print(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
+        group_level = np.mean(values)
+    elif len(values) > 0:
+        group_level = np.median(values)
+    else:
+        group_level = np.NaN
+
+    return group_level
 
 
 # TAB1 population view ----------------------------------------------------------------------- TAB1 population view
@@ -481,12 +533,28 @@ bubbles = Select(title='Population', value='None', options=['None'], width=200)
 markers = Select(title='Marker', value='None', options=['None'], width=200)
 mean_or_median = RadioButtonGroup(labels=["Mean", "Median"], active=0, width=200)
 
+title_1 = PreText(text='Attribute 1')
+level_11 = Select(title='category', value='None', width=180, options=['None'])
+level_12 = Select(title='property', value='None', options=['None'], width=180)
+level_13 = PreText(text='please select a property')
+# level_1.on_change('value', partial(select_columns, select_2=level_2, c_data=c_data))
+filter_box_1 = widgetbox([title_1, level_11, level_12, level_13], css_classes=['full-border'], width=200)
+
+title_2 = PreText(text='Attribute 2')
+level_21 = Select(title='category', value='None', width=180, options=['None'])
+level_22 = Select(title='property', value='None', options=['None'], width=180)
+level_23 = PreText(text='please select a property')
+# level_1.on_change('value', partial(select_columns, select_2=level_2, c_data=c_data))
+filter_box_2 = widgetbox([title_2, level_21, level_22, level_23], css_classes=['full-border'], width=200)
+draw_block_plot_button = Button(label="Draw block plot", width=200, css_classes=['merge-button'])
+draw_block_plot_button.on_click(draw_block_plot)
 
 bubbles.on_change('value', draw_boxplot)
 markers.on_change('value', draw_boxplot)
 mean_or_median.on_change('active', draw_boxplot)
 
-layout3 = row(column(bubbles, markers, mean_or_median), boxplot.create_boxplot(), diff_plot.diff_plot())
+layout3 = row(column(bubbles, markers, mean_or_median, filter_box_1, filter_box_2, draw_block_plot_button),
+              column(row(boxplot.create_boxplot(), diff_plot.diff_plot()), block_plot.block_plot()))
 
 tab3 = Panel(child=layout3, title="statistics view")
 
@@ -618,11 +686,20 @@ def load_test_data():
 
     add_group_button.disabled = False
     create_ref_group_button.disabled = False
-    [add_group() for _ in range(6)]
-    for i in range(7):
+
+    level_11.options = ['None'] + clinical_data.columns.get_level_values(0).unique().tolist()
+    level_11.on_change('value', partial(manipulate_groups.select_columns, select_2=level_12, c_data=clinical_data))
+    level_21.options = ['None'] + clinical_data.columns.get_level_values(0).unique().tolist()
+    level_21.on_change('value', partial(manipulate_groups.select_columns, select_2=level_22, c_data=clinical_data))
+    level_12.on_change('value', partial(manipulate_groups.select_values_2, w_box=filter_box_1, c_data=clinical_data))
+    level_22.on_change('value', partial(manipulate_groups.select_values_2, w_box=filter_box_2, c_data=clinical_data))
+    # r = int((len(pat_list) / 4)) - 2
+    # [add_group() for _ in range(r)]
+    # r += 1
+    # for i in range(r):
         # print(groups[i][1].iloc[2*i:2*i+2, :])
-        groups[i][1] = groups[i][1].iloc[2*i:2*i+2, :]
-        groups_tabs.tabs[i].child.children[2].children[0].source = ColumnDataSource(groups[i][1])
+        # groups[i][1] = groups[i][1].iloc[2*i:2*i+2, :]
+        # groups_tabs.tabs[i].child.children[2].children[0].source = ColumnDataSource(groups[i][1])
     # print(groups)
     create_reference_group_tab()
 

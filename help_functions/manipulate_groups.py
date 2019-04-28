@@ -147,6 +147,49 @@ def select_values(attr, old, new, select_1, new_tab, c_data):
         new_tab.child.children[0].children[0].children[3].disabled = True
 
 
+def select_values_2(attr, old, new, w_box, c_data):
+    if new != 'None':
+        if c_data[w_box.children[1].value][new].values.dtype == 'object':  # categorical data
+            level_3 = MultiSelect(title='value', value=['None'], options=['None'], width=180)
+            try:
+                # print("1  ", clinical_data[select_1.value][new].values.dtype)
+                level_3.options = np.unique(c_data[w_box.children[1].value][new].iloc[:, 0].dropna().values).tolist()
+                level_3.value = [level_3.options[0]]
+            except TypeError:  # TODO filter non categorical data
+                level_3.options = np.unique(
+                    [str(obj) for obj in c_data[w_box.children[1].value][new].iloc[:, 0].dropna().values]).tolist()
+            finally:
+                w_box.children[3] = column(level_3)
+
+        elif 'datetime' in str(c_data[w_box.children[1].value][new].values.dtype):  # datetime data
+            start = c_data[w_box.children[1].value][new].min().dt.date.item()
+            end = c_data[w_box.children[1].value][new].max().dt.date.item()
+            date_slider = DateRangeSlider(title="",
+                                          start=start,
+                                          end=end,
+                                          value=(start, end),
+                                          # value_as_date=True,
+                                          # step=1,
+                                          width=180)
+            checkbox_group = CheckboxGroup(labels=["invert selection"], active=[], width=180)
+            w_box.children[3] = column(date_slider, checkbox_group)
+
+        elif 'int' in str(c_data[w_box.children[1].value][new].values.dtype) or \
+                'float' in str(c_data[w_box.children[1].value][new].values.dtype):
+            # print("3   ", clinical_data[select_1.value][new].values.dtype)
+            start = c_data[w_box.children[1].value][new].min().item()
+            end = c_data[w_box.children[1].value][new].max().item()
+            slider = RangeSlider(start=start, end=end, step=0.1, value=(start, end), title=new + " Range", width=180)
+            checkbox_group = CheckboxGroup(labels=["invert selection"], active=[], width=180)
+            w_box.children[3] = column(slider, checkbox_group)
+
+        else:
+            print("Something went wrong, unexpected datatype by clinical data value selecting")  # TODO error message?
+
+    else:
+        w_box.children[3] = PreText(text='please select a property', width=200)
+
+
 def add_value_to_filter(new_tab, group_no, c_data, groups_dict, pats_data):
     level_1 = new_tab.child.children[0].children[0].children[0].value
     level_2 = new_tab.child.children[0].children[0].children[1].value
@@ -239,15 +282,23 @@ def map_measurements_to_patients(c_data, pats_data):
     return new_df.reset_index(drop=True)
 
 
-def find_measurements(patient_list, pats_data):
+def find_measurements(patient_list, pats_data, output='dict'):
     # print(old_list)
     # print(patient_list)
-    measurement_list = {}
-    for pat in patient_list:
-        measurement_list[pat] = []
-        for measurement in pats_data.keys():
-            if pat + "-" in measurement:
-                measurement_list[pat].append(measurement)
-        if not measurement_list[pat]:
-            measurement_list.pop(pat)
-    return measurement_list
+    if output == 'dict':
+        measurement_list = {}
+        for pat in patient_list:
+            measurement_list[pat] = []
+            for measurement in pats_data.keys():
+                if pat + "-" in measurement:
+                    measurement_list[pat].append(measurement)
+            if not measurement_list[pat]:
+                measurement_list.pop(pat)
+        return measurement_list
+    else:
+        measurement_list = []
+        for pat in patient_list:
+            for measurement in pats_data.keys():
+                if pat + "-" in measurement:
+                    measurement_list.append(measurement)
+        return measurement_list
