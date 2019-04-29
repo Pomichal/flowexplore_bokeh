@@ -45,13 +45,14 @@ def file_callback_tree(attr, old, new):  # TODO file check
 
     if tree_dropdown.value == 'coordinates':
         tree_dropdown.menu[0] = ("coordinates ok (" + file_source_tree.data['file_name'][0] + ")", 'coordinates')
-        x.options = df_viz.columns.tolist()
+        cols = sorted(df_viz.columns.tolist(), key=lambda s: s.lower())
+        x.options = cols
         x.value = 'x'
-        y.options = df_viz.columns.tolist()
+        y.options = cols
         y.value = 'y'
-        color.options = ['None'] + df_viz.columns.tolist()
+        color.options = ['None'] + cols
         color.value = 'None'
-        size.options = ['None'] + df_viz.columns.tolist()
+        size.options = ['None'] + cols
         size.value = 'None'
 
     elif tree_dropdown.value == 'edges':
@@ -179,13 +180,14 @@ def select_patient(attr, old, new):
         df_viz = manipulate_figure.select_patient(df_viz, source, patient.value, pd.DataFrame())
 
     if not df_viz.empty:
-        x.options = df_viz.columns.tolist()
-        x.value = df_viz.columns.tolist()[0]
-        y.options = df_viz.columns.tolist()
-        y.value = df_viz.columns.tolist()[1]
-        color.options = ['None'] + df_viz.columns.tolist()
+        cols = sorted(df_viz.columns.tolist(), key=lambda s: s.lower())
+        x.options = cols
+        # x.value = df_viz.columns.tolist()[0]
+        y.options = cols
+        # y.value = df_viz.columns.tolist()[1]
+        color.options = ['None'] + cols
         color.value = 'None'
-        size.options = ['None'] + df_viz.columns.tolist()
+        size.options = ['None'] + cols
         size.value = 'None'
         x.value = 'x' if 'x' in df_viz.columns.tolist() else \
             (df_viz.columns.tolist()[0] if 'ID' not in df_viz.columns.tolist()[0] else df_viz.columns.tolist()[1])
@@ -214,7 +216,7 @@ def create_stats_tables():
     if df_stats.empty:
         print("ERROR, couldn't find the cell count column")  # TODO error message?
     else:
-        marker.options = ['None'] + list(marker_list)
+        marker.options = ['None'] + sorted(list(marker_list), key=lambda a: a.lower())
         marker.value = marker.options[-1]
 
 
@@ -285,8 +287,10 @@ def active_tab(attr, old, new):
     if old == 0 and new == 1:
         create_stats_tables()
     if new == 2:
-        bubbles.options = ["None"] + df_stats.index.get_level_values(0).unique().tolist()
-        markers.options = ["None"] + df_stats.index.get_level_values(1).unique().tolist()
+        bubbles.options = ["None"] + sorted(df_stats.index.get_level_values(0).unique().tolist(),
+                                            key=lambda a: a.lower())
+        markers.options = ["None"] + sorted(df_stats.index.get_level_values(1).unique().tolist(),
+                                            key=lambda a: a.lower())
         bubbles.value = bubbles.options[1]
         markers.value = markers.options[1]
 
@@ -549,13 +553,14 @@ def load_test_data():
     df_viz['populationID'] = -1
     source.data = df_viz.to_dict(orient='list')
     layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
-    x.options = df_viz.columns.tolist()
+    cols = sorted(df_viz.columns.tolist(), key=lambda a: a.lower())
+    x.options = cols
     x.value = 'x'
-    y.options = df_viz.columns.tolist()
+    y.options = cols
     y.value = 'y'
-    color.options = ['None'] + df_viz.columns.tolist()
+    color.options = ['None'] + cols
     color.value = 'None'
-    size.options = ['None'] + df_viz.columns.tolist()
+    size.options = ['None'] + cols
     size.value = 'None'
 
 ##################################################################### edges

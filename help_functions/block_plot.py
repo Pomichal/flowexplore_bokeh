@@ -33,12 +33,12 @@ def block_plot(df=pd.DataFrame(), marker_name='marker', bubble_name='bubble'):
         p.yaxis.axis_label = "marker '%s' in population '%s'" % (marker_name, bubble_name)
         p.axis.major_label_text_font_size = "10pt"
         p.xaxis.major_label_orientation = pi / 2
-        print(df[val_1].tolist())
-        print(df[val_2].tolist())
+        # print(df[val_1].tolist())
+        # print(df[val_2].tolist())
         vals = df[val_1].tolist() + df[val_2].tolist()
-        print("vals", vals)
+        # print("vals", vals)
         mi, ma = np.min(vals), np.max(vals)
-        print("MIN, MAX", mi, ma)
+        # print("MIN, MAX", mi, ma)
         # if mi > (-ma):
         p.y_range = Range1d(mi - 0.5 * mi, ma + 0.5 * ma)
         # else:
