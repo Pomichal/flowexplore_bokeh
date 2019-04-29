@@ -349,11 +349,11 @@ def draw_block_plot():
                                                                            patients, stats_df, b, m)
 
     # print(block_df.dropna())
-    print(layout3)
-    print(layout3.children)
-    print(layout3.children[1])
-    print(layout3.children[1].children)
-    print(layout3.children[1].children[1])
+    # print(layout3)
+    # print(layout3.children)
+    # print(layout3.children[1])
+    # print(layout3.children[1].children)
+    # print(layout3.children[1].children[1])
     layout3.children[1].children[1] = block_plot.block_plot(block_df.dropna(), m, b)
 
 
@@ -694,12 +694,12 @@ def load_test_data():
     level_12.on_change('value', partial(manipulate_groups.select_values_2, w_box=filter_box_1, c_data=clinical_data))
     level_22.on_change('value', partial(manipulate_groups.select_values_2, w_box=filter_box_2, c_data=clinical_data))
     # r = int((len(pat_list) / 4)) - 2
-    # [add_group() for _ in range(r)]
+    [add_group() for _ in range(6)]
     # r += 1
-    # for i in range(r):
-        # print(groups[i][1].iloc[2*i:2*i+2, :])
-        # groups[i][1] = groups[i][1].iloc[2*i:2*i+2, :]
-        # groups_tabs.tabs[i].child.children[2].children[0].source = ColumnDataSource(groups[i][1])
+    for i in range(7):
+        print(groups[i][1].iloc[2*i:2*i+2, :])
+        groups[i][1] = groups[i][1].iloc[2*i:2*i+2, :]
+        groups_tabs.tabs[i].child.children[2].children[0].source = ColumnDataSource(groups[i][1])
     # print(groups)
     create_reference_group_tab()
 
