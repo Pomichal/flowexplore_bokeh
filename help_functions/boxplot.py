@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from bokeh.plotting import figure
+from bokeh.models import HoverTool, ColumnDataSource
 from math import pi
 
 # source: https://bokeh.pydata.org/en/latest/docs/gallery/boxplot.html
@@ -31,9 +32,11 @@ def create_boxplot(df=pd.DataFrame()):
         if not out.empty:
             outx = []
             outy = []
+            outname = []
             for keys in out.index:
                 outx.append(keys[0])
                 outy.append(out.loc[keys[0]].loc[keys[1]])
+                outname.append(keys[1])
 
         kw = dict()
         kw['title'] = "Boxplot: marker '%s' in population '%s'" % (value[1], value[0])
@@ -62,7 +65,24 @@ def create_boxplot(df=pd.DataFrame()):
 
         # outliers
         if not out.empty:
-            p.circle(outx, outy, size=6, color="#F38630", fill_alpha=0.6)
+            data = {'outx':outx,
+                    'outy':outy,
+                    'outname':outname}
+            print(outname)
+            source = ColumnDataSource(data)
+
+            renderer = p.circle(x='outx', y='outy', size=6, color="#F38630", fill_alpha=0.6, source=source)
+            hover = HoverTool(
+                tooltips=[
+                    # ("index", "$index"),
+                    # ("{}".format(size_value), "@{{{}}}".format(size_value)),
+                    # ("{}".format(color_value), "@{{{}}}".format(color_value)),
+                    ("measurement", "@outname"),
+                    ("y", "$y"),
+                ],
+                renderers=[renderer]
+            )
+            p.add_tools(hover)
 
         p.xgrid.grid_line_color = None
         p.ygrid.grid_line_color = "white"
