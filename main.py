@@ -2,17 +2,10 @@ import pandas as pd
 import numpy as np
 from os.path import join, dirname
 from bokeh.layouts import row, widgetbox, column
-from bokeh.models import Select, ColorBar, ColumnDataSource, HoverTool, PointDrawTool, \
-    CustomJS, LassoSelectTool, GraphRenderer, StaticLayoutProvider, Circle, MultiLine
-from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, TableColumn, NumberFormatter, Panel, Tabs, \
-    PreText, DateRangeSlider, RangeSlider, CheckboxGroup, Div, MultiSelect, RadioButtonGroup
-from bokeh.models.mappers import LinearColorMapper
-from bokeh.plotting import curdoc, figure
+from bokeh.models import Select, ColumnDataSource, CustomJS
+from bokeh.models.widgets import Button, Dropdown, TextInput, DataTable, Panel, Tabs, PreText, RadioButtonGroup
+from bokeh.plotting import curdoc
 from functools import reduce, partial
-from math import pi
-from io import StringIO, BytesIO
-import base64
-
 from help_functions import help_functions as hf
 from help_functions import boxplot
 from help_functions import file_upload
@@ -36,7 +29,7 @@ populations = pd.DataFrame(columns=['population_name', 'color'])
 
 source = ColumnDataSource()
 
-population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))  # TODO add more colors
+population_colors = pd.read_csv(join(dirname(__file__), 'data/colors.csv'))
 
 clinical_data = pd.DataFrame()
 
@@ -84,7 +77,7 @@ def file_callback_populations(attr, old, new):  # TODO file check
     layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
 
-def file_callback_pat(attr, old, new):  # TODO file check, upload population data
+def file_callback_pat(attr, old, new):  # TODO file check
 
     df, name = file_upload.file_callback_pat(file_source_patient)
     patients_data[name] = df
@@ -213,7 +206,7 @@ def check_selection(attr, old, new):
         bubble_select.disabled = True
 
 
-def create_stats_tables():  # TODO remove error, if running without coordinates data
+def create_stats_tables():
     global df_stats
 
     df_stats, marker_list = hf.create_stats_tables(populations, patients_data, df_viz)
@@ -264,13 +257,8 @@ def add_group():
 
 
 def remove_group():
-    # global merge
     groups_tabs.tabs.pop(groups_tabs.active)
     groups.pop(groups_tabs.active)
-    # print(merge.options.pop(groups_tabs.active + 1))
-    # li = merge.options                                        # TODO merge
-    # del li[groups_tabs.active + 1]
-    # merge.options = li
 
 
 def hold(attr, old, new):  # TODO add callback after pointDrawTool action
@@ -284,10 +272,10 @@ def rename_tab(text_input):
     text_input.value = ""
     new_tabs = Tabs(tabs=groups_tabs.tabs, active=groups_tabs.active)
     groups_tabs = new_tabs
-    layout2.children[2].children[1] = new_tabs  # TODO time complexity???
+    layout2.children[2].children[1] = new_tabs
 
 
-def create_panel(group_number=0):  # TODO css classes
+def create_panel(group_number=0):
 
     return manipulate_groups.create_panel(clinical_data, patients_data, rename_tab, remove_group,
                                           remove_measurements, groups, group_number)
@@ -297,14 +285,8 @@ def active_tab(attr, old, new):
     if old == 0 and new == 1:
         create_stats_tables()
     if new == 2:
-        # print(df_stats)
-        # print(df_stats.index)
-        # print(df_stats.index.get_level_values(0))
-        # print(df_stats.index.get_level_values(0).unique())
-        # print(df_stats.index.get_level_values(0).unique().tolist())
         bubbles.options = ["None"] + df_stats.index.get_level_values(0).unique().tolist()
         markers.options = ["None"] + df_stats.index.get_level_values(1).unique().tolist()
-        # print(df_stats)
         bubbles.value = bubbles.options[1]
         markers.value = markers.options[1]
 
@@ -348,12 +330,6 @@ def draw_block_plot():
                                                                            filter_box_2.children[3].children,
                                                                            patients, stats_df, b, m)
 
-    # print(block_df.dropna())
-    # print(layout3)
-    # print(layout3.children)
-    # print(layout3.children[1])
-    # print(layout3.children[1].children)
-    # print(layout3.children[1].children[1])
     layout3.children[1].children[1] = block_plot.block_plot(block_df.dropna(), m, b)
 
 
@@ -384,12 +360,10 @@ def find_value(level_1, level_2, level_3, patients, stats_df, b, m):
         categories = level_3[0].value
         i = df[df.columns[0]][df[df.columns[0]].isin(categories)].index
 
-    # print("iii", i)  # patients in group where attribute_1 TRUE
     measurements = manipulate_groups.find_measurements(i, patients_data, output='list')
 
     values = list([stats_df.loc[measurement, (b, m)] for measurement in measurements])
     if mean_or_median.active == 0 and len(values) > 0:
-        # print(list([stats_df.loc[measurement, (b, m)] for measurement in measurements]))
         group_level = np.mean(values)
     elif len(values) > 0:
         group_level = np.median(values)
@@ -409,10 +383,6 @@ file_source_populations.on_change('data', file_callback_populations)
 file_source_patient.on_change('data', file_callback_pat)
 
 file_source_clinical.on_change('data', file_callback_clinical)
-
-# test data loading, only for testing
-# test_data = Button(label="test data")
-# test_data.on_click(load_test_data)
 
 # upload tree files
 menu_tree = [("Upload cluster coordinates", "coordinates"), ("Upload graph edges", "edges")]
@@ -509,8 +479,6 @@ upload_clinical_data = Button(label='upload clinical data', width=200)
 upload_clinical_data.js_on_click(CustomJS(args=dict(file_source=file_source_clinical),
                                           code=open(join(dirname(__file__), "static/js/upload.js")).read()))
 
-# merge = Select(title='Merge current group with:', value='None', options=['None'], width=200)      # TODO merge
-
 group1 = create_panel()
 groups.append([{}, manipulate_groups.map_measurements_to_patients(c_data=clinical_data, pats_data=patients_data)])
 
@@ -519,7 +487,6 @@ groups_tabs.width = 800
 
 layout2 = row(basic_overview, correlation_plot.correlation_plot(marker.value, patients_data),
               column(children=[column(row(add_group_button, create_ref_group_button, upload_clinical_data),
-                                                                          # merge
                                       ),
                                groups_tabs]))
 
@@ -537,14 +504,12 @@ title_1 = PreText(text='Attribute 1')
 level_11 = Select(title='category', value='None', width=180, options=['None'])
 level_12 = Select(title='property', value='None', options=['None'], width=180)
 level_13 = PreText(text='please select a property')
-# level_1.on_change('value', partial(select_columns, select_2=level_2, c_data=c_data))
 filter_box_1 = widgetbox([title_1, level_11, level_12, level_13], css_classes=['full-border'], width=200)
 
 title_2 = PreText(text='Attribute 2')
 level_21 = Select(title='category', value='None', width=180, options=['None'])
 level_22 = Select(title='property', value='None', options=['None'], width=180)
 level_23 = PreText(text='please select a property')
-# level_1.on_change('value', partial(select_columns, select_2=level_2, c_data=c_data))
 filter_box_2 = widgetbox([title_2, level_21, level_22, level_23], css_classes=['full-border'], width=200)
 draw_block_plot_button = Button(label="Draw block plot", width=200, css_classes=['merge-button'])
 draw_block_plot_button.on_click(draw_block_plot)

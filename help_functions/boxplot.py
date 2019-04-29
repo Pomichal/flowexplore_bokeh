@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 from bokeh.plotting import figure
 from bokeh.models import HoverTool, ColumnDataSource
@@ -68,7 +67,7 @@ def create_boxplot(df=pd.DataFrame()):
             data = {'outx':outx,
                     'outy':outy,
                     'outname':outname}
-            print(outname)
+            # print(outname)
             source = ColumnDataSource(data)
 
             renderer = p.circle(x='outx', y='outy', size=6, color="#F38630", fill_alpha=0.6, source=source)
