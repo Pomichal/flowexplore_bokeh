@@ -1,12 +1,7 @@
 import matplotlib as mpl
 from matplotlib.colors import LinearSegmentedColormap
-import numpy as np
 import pandas as pd
 from functools import reduce
-from bokeh.layouts import row, widgetbox, column
-from functools import partial
-from bokeh.models import Select
-from bokeh.models.widgets import Button, Panel, PreText, DateRangeSlider, RangeSlider, CheckboxGroup
 
 
 def prepare_data(df_patient, df_coordinates):
@@ -16,15 +11,10 @@ def prepare_data(df_patient, df_coordinates):
     :param df_patient: dataframe with patients data for each cluster
     :param df_coordinates: dataframe with coordinates for clusters
     """
-    # print("coor", df_coordinates.iloc[:, 1].values)
     df_patient['x'] = df_coordinates.iloc[:, 1].values
     df_patient['y'] = df_coordinates.iloc[:, 2].values
     df_patient['populationID'] = -1
     data = df_patient.drop('Unnamed: 0', axis=1)
-    # print(df_patient.head())
-
-    # rename attributes example
-    # data.rename(index=str, columns={"csv.pbm_038.count": "count"}, inplace=True)
     return data
 
 
@@ -105,21 +95,12 @@ def create_color_map():
 
 
 def scale(old_value, old_min, old_max, new_min=25, new_max=50):
-    """
-    Scale data into range new_min, new_max
-    :param old_value:
-    :param old_min:
-    :param old_max:
-    :param new_min:
-    :param new_max:
-    :return: scaled value
-    """
     old_range = (old_max - old_min)
     new_range = (new_max - new_min)
     return (((old_value - old_min) * new_range) / old_range) + new_min
 
 
-def create_stats_tables(pops, pats_data, viz_df):  # TODO remove error, if running without coordinates data
+def create_stats_tables(pops, pats_data, viz_df):
     b = pops['population_name'].values
     m = reduce(lambda s, q: s | q, map(lambda p: set(pats_data[p].columns.values), pats_data.keys()))
     iterables = [b, m]
@@ -131,13 +112,22 @@ def create_stats_tables(pops, pats_data, viz_df):  # TODO remove error, if runni
     for pat in pats_data:
         df_patient = pats_data[pat]
 
-        # select column with cell count
-        # TODO better condition to filter columns and find cell count
         int_cols = list(filter(
             lambda a: (not "id" in a.lower()) and df_patient[a].nunique() > 2 and
                       ('int' in str(df_patient[a].values.dtype)), df_patient.columns))
 
         if len(int_cols) != 1:  # couldn't find the cell count column
+            # algorithms without tree structure
+            cell_sum = len(df_patient)
+            for idx_b, bu in enumerate(b):
+                clusters = df_patient[viz_df['populationID'] == idx_b]
+                for idx_m, ma in enumerate(m):
+                    if ma != cell_count_column and ma in clusters.columns:
+                        values = map(lambda a, count: a * clusters.loc[count, cell_count_column],
+                                     clusters[ma].dropna(), clusters[ma].index.values)
+                        df_stats.loc[(bu, ma), pat] = reduce(lambda p, q: p + q, list(values), 0) / cell_sum
+                    else:
+                        df_stats.loc[(bu, ma), pat] = reduce(lambda p, q: p + q, clusters[cell_count_column].values)
             return df_stats, m
         else:
             cell_count_column = int_cols[0]
@@ -168,36 +158,3 @@ def find_healthy(pats_data, c_data):
         df = pd.DataFrame([[m, 'healthy']], columns=['measurements', 'patient'])
         new_df = new_df.append(df)
     return new_df.reset_index(drop=True)
-
-# trying drawing using graphs, but missing easily moving of vertices
-# def create_figure2(df):
-#     N = len(df)
-#     node_indices = list(range(1, N + 1))
-#
-#     plot = figure(title='Graph Layout Demonstration', x_range=(-1.1, 600), y_range=(-1.1, 600),
-#                   tools='pan, wheel_zoom, box_select', toolbar_location='above')
-#
-#     graph = GraphRenderer()
-#
-#     graph.node_renderer.data_source.add(node_indices, 'index')
-#     graph.node_renderer.data_source.add(Spectral8, 'color')
-# graph.node_renderer.glyph = Circle(radius=15)
-#
-# graph.selection_policy = NodesAndLinkedEdges()
-#
-# graph.edge_renderer.glyph = MultiLine(line_color="#CCCCCC", line_alpha=0.8, line_width=1)
-# graph.edge_renderer.data_source.data = dict(
-#     start=edges['edges.from'].tolist(),
-#     end=edges['edges.to'].tolist())
-#
-# start of layout code
-# xx = df['x']
-# yy = df['y']
-# graph_layout = dict(zip(node_indices, zip(xx, yy)))
-# graph.layout_provider = StaticLayoutProvider(graph_layout=graph_layout)
-#
-# plot.renderers.append(graph)
-#
-# draw_tool = PointDrawTool(add=False, renderers=[graph])
-# plot.add_tools(draw_tool)
-# return plot

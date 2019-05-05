@@ -8,6 +8,12 @@ from bokeh.models import ColorBar
 
 
 def correlation_plot(marker_value, pats_data):
+    """
+    Shows correlation between measueremts
+    :param marker_value: the selecte marker
+    :param pats_data: dict of patients data {"measurments_name" : dataframe_with_patient_data}
+    :return: figure, (a heatmap)
+    """
     if marker_value != "None":
         patients_list = list(pats_data.keys())
 
@@ -15,7 +21,7 @@ def correlation_plot(marker_value, pats_data):
                    x_range=patients_list, y_range=patients_list,
                    plot_width=800, plot_height=800,
                    tools='pan, box_zoom,reset, wheel_zoom',
-                   tooltips=[('rate', '@rate%')])
+                   tooltips=[('rate', '@rate%')], y_axis_location = "right")
 
         p.grid.grid_line_color = None
         p.axis.axis_line_color = None
@@ -45,7 +51,7 @@ def correlation_plot(marker_value, pats_data):
                source=df,
                fill_color={'field': 'rate', 'transform': mapper},
                line_color=None)
-        p.add_layout(color_bar, 'right')
+        p.add_layout(color_bar, 'left')
     else:
         p = figure(plot_height=800, plot_width=800,
                    tools='pan, box_zoom, reset, wheel_zoom',

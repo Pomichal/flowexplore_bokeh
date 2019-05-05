@@ -11,6 +11,8 @@ from help_functions import boxplot
 from help_functions import file_upload
 from help_functions import create_figure, manipulate_figure, correlation_plot, manipulate_groups, diff_plot, block_plot
 
+# GLOBAL VARIABLES
+
 file_source_tree = ColumnDataSource({'file_contents': [], 'file_name': []})
 
 file_source_populations = ColumnDataSource({'file_contents': [], 'file_name': []})
@@ -36,7 +38,7 @@ clinical_data = pd.DataFrame()
 groups = []  # conditions for groups of patients
 
 
-def file_callback_tree(attr, old, new):  # TODO file check
+def file_callback_tree(attr, old, new):
     global df_viz
     global source
     global tree
@@ -65,7 +67,7 @@ def file_callback_tree(attr, old, new):  # TODO file check
         tree_dropdown.button_type = "success"
 
 
-def file_callback_populations(attr, old, new):  # TODO file check
+def file_callback_populations(attr, old, new):
     global df_viz
     global populations
     global source
@@ -78,8 +80,7 @@ def file_callback_populations(attr, old, new):  # TODO file check
     layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
 
-def file_callback_pat(attr, old, new):  # TODO file check
-
+def file_callback_pat(attr, old, new):
     df, name = file_upload.file_callback_pat(file_source_patient)
     patients_data[name] = df
     patient.options = patient.options + [name]
@@ -87,7 +88,7 @@ def file_callback_pat(attr, old, new):  # TODO file check
     upload_patients.button_type = 'success'
 
 
-def file_callback_clinical(attr, old, new):  # TODO file check
+def file_callback_clinical(attr, old, new):
     global clinical_data
 
     clinical_data = file_upload.file_callback_clinical(file_source_clinical)
@@ -108,8 +109,8 @@ def file_callback_clinical(attr, old, new):  # TODO file check
 
 
 def draw_figure(df, df_edges, df_populations):
-
-    fig, new_columns = create_figure.create_figure(df, df_edges, df_populations, source, x.value, y.value, color.value, size.value)
+    fig, new_columns = create_figure.create_figure(df, df_edges, df_populations, source, x.value, y.value, color.value,
+                                                   size.value)
     if not df.empty:
 
         data_table.columns = new_columns
@@ -128,7 +129,6 @@ def draw_figure(df, df_edges, df_populations):
             for index, population in populations.iterrows():
                 text += population['population_name'] + ": " + \
                         ", ".join(str(e) for e in df_viz.index[df_viz['populationID'] == index].tolist()) + "\n\n"
-                # print(text)
                 download_populations.callback = CustomJS(args=dict(text=text),
                                                          code=open(join(dirname(__file__),
                                                                         "static/js/download_populations.js")).read())
@@ -195,7 +195,7 @@ def select_patient(attr, old, new):
         y.value = 'y' if 'y' in df_viz.columns.tolist() else \
             (df_viz.columns.tolist()[-1] if 'ID' not in df_viz.columns.tolist()[-1] else df_viz.columns.tolist()[
                 -2])
-    else:   # TODO show error message?
+    else:  # TODO show error message?
         print("ERROR: please select a patient")
     layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
@@ -221,7 +221,7 @@ def create_stats_tables():
 
 
 def update_correlation_plot(attr, old, new):
-    layout2.children[1] = correlation_plot.correlation_plot(marker.value, patients_data)
+    layout2.children[1].children[1] = correlation_plot.correlation_plot(marker.value, patients_data)
 
 
 def create_reference_group_tab():
@@ -264,7 +264,7 @@ def remove_group():
 
 
 def hold(attr, old, new):  # TODO add callback after pointDrawTool action
-    print("eeee")
+    print("pointDrawToolcallback")
 
 
 def rename_tab(text_input):
@@ -278,7 +278,6 @@ def rename_tab(text_input):
 
 
 def create_panel(group_number=0):
-
     return manipulate_groups.create_panel(clinical_data, patients_data, rename_tab, remove_group,
                                           remove_measurements, groups, group_number)
 
@@ -489,10 +488,10 @@ groups.append([{}, manipulate_groups.map_measurements_to_patients(c_data=clinica
 groups_tabs = Tabs(tabs=[group1])
 groups_tabs.width = 800
 
-layout2 = row(basic_overview, correlation_plot.correlation_plot(marker.value, patients_data),
-              column(children=[column(row(add_group_button, create_ref_group_button, upload_clinical_data),
-                                      ),
-                               groups_tabs]))
+layout2 = row(column(children=[column(row(add_group_button, create_ref_group_button, upload_clinical_data)),
+                               groups_tabs]),
+              column(basic_overview, correlation_plot.correlation_plot(marker.value, patients_data))
+              )
 
 tab2 = Panel(child=layout2, title="group selection view")
 
@@ -541,7 +540,7 @@ def load_test_data():
     global populations
     global clinical_data
 
-#################################################################### coordinates
+#    #################################################################### coordinates
 
     filename = 'coordinates.csv'
     df = pd.read_csv(join(dirname(__file__), 'data/coordinates.csv'))
@@ -563,7 +562,7 @@ def load_test_data():
     size.options = ['None'] + cols
     size.value = 'None'
 
-##################################################################### edges
+#    ##################################################################### edges
     filename = 'edges.csv'
     df = pd.read_csv(join(dirname(__file__), 'data/edges.csv'))
 
@@ -574,7 +573,7 @@ def load_test_data():
     # if reduce(lambda a, q: a and q, [True if 'ok' in string[0] else False for string in tree_dropdown.menu]):
     tree_dropdown.button_type = "success"
 
-##################################################################### patients
+#    ##################################################################### patients
     pat_list = [
         'pBM-36-sort-CD15-p2-concat-normalized-noCD3-CD14-CD15.fcs _ 62 .csv',
         'pBM-36-sort-CD15-p3-concat-normalized-noCD3-CD14-CD15.fcs _ 63 .csv',
@@ -609,14 +608,14 @@ def load_test_data():
         filename = p
         df = pd.read_csv(join(dirname(__file__), 'data/' + filename))
         ind = filename.split(".")[0]
-        if 'Unnamed: 0' in df.columns:  # TODO drop all Unnamed
+        if 'Unnamed: 0' in df.columns:
             df.drop(columns=['Unnamed: 0'], inplace=True)
         patients_data[ind] = df
         patient.options = patient.options + [ind]
         patient.value = ind
     upload_patients.button_type = 'success'
 
-##################################################################### populations
+#    ##################################################################### populations
 
     file_io = open(join(dirname(__file__), 'data/populations.txt'), "r")
     text = list(iter(file_io.read().splitlines()))
@@ -644,7 +643,7 @@ def load_test_data():
     upload_populations.button_type = 'success'
     layout.children[1] = draw_figure(df_viz, tree['edges'], populations)
 
-##################################################################### clinical data
+#    ##################################################################### clinical data
 
     clinical_data = pd.read_excel(join(dirname(__file__), 'data/PATIENTS DATABASE NEW FINAL to upload.xlsx'),
                                   header=[0, 1, 2])
@@ -667,12 +666,10 @@ def load_test_data():
     [add_group() for _ in range(6)]
     # r += 1
     for i in range(7):
-        print(groups[i][1].iloc[2*i:2*i+2, :])
-        groups[i][1] = groups[i][1].iloc[2*i:2*i+2, :]
+        # print(groups[i][1].iloc[2*i:2*i+2, :])
+        groups[i][1] = groups[i][1].iloc[2 * i:2 * i + 2, :]
         groups_tabs.tabs[i].child.children[2].children[0].source = ColumnDataSource(groups[i][1])
     # print(groups)
     create_reference_group_tab()
 
-
-load_test_data()
-
+# load_test_data()

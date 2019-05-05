@@ -7,6 +7,11 @@ from math import pi
 
 
 def create_boxplot(df=pd.DataFrame()):
+    """
+    creates a box-plot with every group included
+    :param df: dataframe with data to be drawn
+    :return: figure, (a box-plot)
+    """
     if not df.empty:
         cats = df['group'].unique()
         value = df.columns[0]
@@ -64,18 +69,15 @@ def create_boxplot(df=pd.DataFrame()):
 
         # outliers
         if not out.empty:
-            data = {'outx':outx,
-                    'outy':outy,
-                    'outname':outname}
+            data = {'outx': outx,
+                    'outy': outy,
+                    'outname': outname}
             # print(outname)
             source = ColumnDataSource(data)
 
             renderer = p.circle(x='outx', y='outy', size=6, color="#F38630", fill_alpha=0.6, source=source)
             hover = HoverTool(
                 tooltips=[
-                    # ("index", "$index"),
-                    # ("{}".format(size_value), "@{{{}}}".format(size_value)),
-                    # ("{}".format(color_value), "@{{{}}}".format(color_value)),
                     ("measurement", "@outname"),
                     ("y", "$y"),
                 ],

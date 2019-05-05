@@ -1,12 +1,18 @@
 import numpy as np
 import pandas as pd
 from bokeh.plotting import figure
-from bokeh.models import Span, Range1d
-import random
+from bokeh.models import Range1d
 from math import pi
 
 
 def block_plot(df=pd.DataFrame(), marker_name='marker', bubble_name='bubble'):
+    """
+    Function returning block-plot
+    :param df: dataframe with data to be visualized
+    :param marker_name: name of selected marker
+    :param bubble_name: name of selected cell population
+    :return: figure, the block-plot graph
+    """
     if not df.empty:
         cats = df.index.tolist()
 
@@ -33,16 +39,9 @@ def block_plot(df=pd.DataFrame(), marker_name='marker', bubble_name='bubble'):
         p.yaxis.axis_label = "marker '%s' in population '%s'" % (marker_name, bubble_name)
         p.axis.major_label_text_font_size = "10pt"
         p.xaxis.major_label_orientation = pi / 2
-        # print(df[val_1].tolist())
-        # print(df[val_2].tolist())
         vals = df[val_1].tolist() + df[val_2].tolist()
-        # print("vals", vals)
         mi, ma = np.min(vals), np.max(vals)
-        # print("MIN, MAX", mi, ma)
-        # if mi > (-ma):
         p.y_range = Range1d(mi - 0.5 * mi, ma + 0.5 * ma)
-        # else:
-        #     p.y_range = Range1d(-ma - 0.5 * ma, ma + 0.5 * ma)
     else:
         p = figure(tools="", background_fill_color="#2F2F2F", x_range=['a', 'b', 'c'], toolbar_location=None,
                    height=400, width=1200)

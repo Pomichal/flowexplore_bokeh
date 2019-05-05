@@ -7,7 +7,16 @@ from math import pi
 
 
 def calculate_diff(b, m, stats_df, group_names, groups_dict, mean_or_med=0):
-    # stats_df = pd.DataFrame(stats.loc[(b, m), :])
+    """
+    calculate difference from reference group
+    :param b: name of the population (bubble)
+    :param m: name of the marker
+    :param stats_df: dataframe with all measurements and marker values for every population
+    :param group_names: names of patient groups
+    :param groups_dict: dict with groups data
+    :param mean_or_med: 0- mean, 1-median
+    :return: dataframe with difference from reference group for every group
+    """
     diff_df = pd.DataFrame(index=list([tab.title for tab in group_names]), columns=['diff'])
 
     reference_level = 0
@@ -28,7 +37,6 @@ def calculate_diff(b, m, stats_df, group_names, groups_dict, mean_or_med=0):
         diff_df.loc[group_names[idx].title, 'diff'] = group_level - reference_level
 
     return diff_df
-    # layout3.children[2] = diff_plot.diff_plot(diff_df, m, b)
 
 
 def generate_random_color():
@@ -36,6 +44,13 @@ def generate_random_color():
 
 
 def diff_plot(df_diff=pd.DataFrame(), marker_name='marker', bubble_name='bubble'):
+    """
+    shows the difference from reference group
+    :param df_diff: data with difference from reference group
+    :param marker_name: name of the selected marker
+    :param bubble_name: name of the selected population (bubble)
+    :return: figure (diff plot)
+    """
     if not df_diff.empty:
         cats = df_diff.index.tolist()
 
@@ -54,16 +69,13 @@ def diff_plot(df_diff=pd.DataFrame(), marker_name='marker', bubble_name='bubble'
         start = [0] * len(cats)
         end = df_diff[value].tolist()
         colors = [generate_random_color() for _ in range(0, len(df_diff))]
-        # print(colors)
         p.vbar(cats, 0.2, start, end, fill_color=colors, line_color='black')
-        # p.vbar(cats, 0.4, q1[value], q2[value], fill_color="#3B8686", line_color="black")
         p.ygrid.minor_grid_line_color = 'navy'
         p.ygrid.minor_grid_line_alpha = 0.1
-        p.yaxis.axis_label = "marker '%s' in population '%s'" % (marker_name, bubble_name)
+        p.yaxis.axis_label = "difference on marker '%s' in population '%s'" % (marker_name, bubble_name)
         p.axis.major_label_text_font_size = "10pt"
         p.xaxis.major_label_orientation = pi / 2
         mi, ma = np.min(end), np.max(end)
-        # print("MIN, MAX", mi, ma)
         if mi + ma < 0:
             p.y_range = Range1d(mi + 0.5*mi, -mi - 0.5*mi)
         else:

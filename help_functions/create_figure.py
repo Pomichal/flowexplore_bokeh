@@ -8,8 +8,23 @@ import help_functions.help_functions as hf
 
 formatter = NumberFormatter(format='0.0000')
 
+# source: https://github.com/bokeh/bokeh/tree/master/examples/app/crossfilter
+
 
 def create_figure(df, df_edges, df_populations, source, x_value, y_value, color_value, size_value):
+    """
+    creates a graph with patient data (and tree structure, if available), works with four dimensions:
+    x axis, y axis, color and size of nodes
+    :param df: dataframe for visualisation
+    :param df_edges: dataframe with edge data (edge index, from, to)
+    :param df_populations: daaframe with cell populations data (population_name, color)
+    :param source: ColumnDataSource to be visualised
+    :param x_value: value of x dimension
+    :param y_value: value of y dimension
+    :param color_value: value of color dimension
+    :param size_value: value of size dimension
+    :return: figure p -> graph with visualized data
+    """
 
     new_columns = []
 
@@ -108,10 +123,6 @@ def create_figure(df, df_edges, df_populations, source, x_value, y_value, color_
         p.toolbar.active_tap = draw_tool
 
         new_columns = [
-            # TableColumn(field=x_value, title=x_value, formatter=formatter),
-            # TableColumn(field=y_value, title=y_value, formatter=formatter),
-            # TableColumn(field=color_value, title=color_value, formatter=formatter),
-            # TableColumn(field=size_value, title=size_value, formatter=formatter),
             TableColumn(field=x_value, title=x_value),
             TableColumn(field=y_value, title=y_value),
             TableColumn(field=color_value, title=color_value),
