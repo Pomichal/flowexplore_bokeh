@@ -10,11 +10,8 @@ Bachelor work, FIIT STU Bratislava
 
 (make sure, you have [git](https://git-scm.com/download/win) installed)
 
-1. download [python 3.7.3](https://www.python.org/downloads/windows/) and make sure to check "add python 3.7.3 to your 
-PATH" (or see adding python to your 
-[path](https://datatofish.com/add-python-to-windows-path/))
-
-1. download [Anaconda](https://www.anaconda.com/distribution/), python 3.7 version for Windows
+1. download [Anaconda](https://www.anaconda.com/distribution/), python 3.7 version for Windows 
+(see [help](https://docs.anaconda.com/anaconda/install/windows/))
 
 1. navigate to the folder, where you want to download the app, open git console
 (right click and select "git bash here") and type 
@@ -22,35 +19,39 @@ PATH" (or see adding python to your
     ```
     git clone https://github.com/Pomichal/flowexplore_bokeh.git
     ```
-
-1. run Anaconda prompt (hit windows button and search after "anaconda-prompt", navigate to the folder,
+    hit ENTER.
+1. run Anaconda prompt (hit windows button and search after "Anaconda prompt", navigate to the folder,
  where you cloned the app (into the folder, 
 where requirements.txt is placed). 
-Find the absolute path to the folder and type into the console:
+Find the absolute path to the folder and type into the console, for example:
 
     ```
-    cd /path/to/the/directory
+    cd C:\Users\NTB\Desktop\app\flowexplore_bokeh
     ```
-
-1. run 
+    Replace the path in the example with path to your directory. Hit ENTER.
+1. In Anaconda prompt run 
     ```
     conda create --name flowexplore_env --file requirements.txt
     ```
-
-1. run 
+    hit Enter. A question will be shown "Proceed(y/n)?" write "y" and hit ENTER. 
+    
+    Wait until all requirements will be installed.
+1. In Anaconda prompt run 
     ```
-    activate flowexplore_env
+    conda activate flowexplore_env
     ```
-
-1. navigate to the parent directory
+    hit ENTER. "(flowexplore_env)" will show on the beginning
+    of the last row
+1. navigate to the parent directory with writing
     ```
     cd ..
     ```
-
-1. run
+    to the Anaconda prompt and hit ENTER.
+1. In Anaconda prompt run
     ```
     bokeh serve flowexplore_bokeh --show
     ```
-
-1. to close the server hit ctrl+C
+    The app should open in your browser. Don't close the Anaconda prompt 
+    until using the app!
+1. to close the server go to the Anaconda prompt and hit ctrl+C
 
